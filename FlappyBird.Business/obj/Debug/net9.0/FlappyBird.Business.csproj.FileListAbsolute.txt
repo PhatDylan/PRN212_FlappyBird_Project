@@ -1,0 +1,15 @@
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBird.Business.GeneratedMSBuildEditorConfig.editorconfig
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBird.Business.AssemblyInfoInputs.cache
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBird.Business.AssemblyInfo.cs
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBird.Business.csproj.CoreCompileInputs.cache
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\bin\Debug\net9.0\FlappyBird.Business.deps.json
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\bin\Debug\net9.0\FlappyBird.Business.dll
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\bin\Debug\net9.0\FlappyBird.Business.pdb
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBird.Business.dll
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\refint\FlappyBird.Business.dll
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBird.Business.pdb
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\ref\FlappyBird.Business.dll
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\bin\Debug\net9.0\FlappyBird.Data.dll
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\bin\Debug\net9.0\FlappyBird.Data.pdb
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBird.Business.csproj.AssemblyReference.cache
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Business\obj\Debug\net9.0\FlappyBi.684B52EC.Up2Date
