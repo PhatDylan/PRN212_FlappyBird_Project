@@ -39,8 +39,8 @@
                    FontSize="24"
                    FontWeight="Bold"
                    Foreground="White"
-                   Canvas.Left="50" Canvas.Top="10"
-                   Panel.ZIndex="3" />
+                   Canvas.Left="191" Canvas.Top="10"
+                   Panel.ZIndex="3" HorizontalAlignment="Left" VerticalAlignment="Center" />
 
         <!-- Hiển thị điểm cao -->
         <TextBlock x:Name="HighScoreText"
@@ -48,8 +48,18 @@
                FontSize="16"
                FontWeight="Bold"
                Foreground="Yellow"
-               Canvas.Left="216" Canvas.Top="15"
-               Panel.ZIndex="3" />
+               Canvas.Left="357" Canvas.Top="19"
+               Panel.ZIndex="3" HorizontalAlignment="Left" VerticalAlignment="Top" />
+        
+        <!-- Nút Start -->
+        <Button x:Name="BtnStart"
+            Content="Start"
+            Width="160" Height="48"
+            FontSize="20"
+            Click="BtnStart_Click"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Panel.ZIndex="10"/>
 
 
 
