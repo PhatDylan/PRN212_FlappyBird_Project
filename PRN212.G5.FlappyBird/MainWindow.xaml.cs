@@ -2,7 +2,6 @@
 using FlappyBird.Data.Repositories;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Media;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,7 +15,7 @@ namespace PRN212.G5.FlappyBird.Views
     public partial class MainWindow : Window
     {
         private readonly DispatcherTimer gameTimer = new();
-        private readonly GameRepo gameRepo = new();   //Dùng GameRepo để load/save điểm
+        private readonly GameRepo gameRepo = new();   // Dùng GameRepo để load/save điểm
 
         private double birdSpeed = 0;
         private int score = 0;
@@ -34,6 +33,9 @@ namespace PRN212.G5.FlappyBird.Views
         private SoundPlayer? jumpSound;
         private SoundPlayer? hitSound;
 
+        private bool isGameOver = false;
+        private bool isPlaying = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -43,11 +45,34 @@ namespace PRN212.G5.FlappyBird.Views
             //jumpSound = new SoundPlayer("jump.wav");
             //hitSound = new SoundPlayer("hit.wav");
 
-            StartGame();
+            // Cấu hình game loop (đăng ký Tick 1 lần duy nhất)
+            gameTimer.Interval = TimeSpan.FromMilliseconds(20);
+            gameTimer.Tick += GameLoop;
+
+            // Không auto start nữa, hiển thị màn hình bắt đầu
+            ShowStartScreen();
+        }
+
+        private void ShowStartScreen()
+        {
+            isPlaying = false;
+            isGameOver = false;
+            gameTimer.Stop();
+
+            // Hiện nút Start
+            if (BtnStart != null)
+                BtnStart.Visibility = Visibility.Visible;
         }
 
         private void StartGame()
         {
+            isGameOver = false;
+            isPlaying = true;
+
+            // Ẩn nút Start
+            if (BtnStart != null)
+                BtnStart.Visibility = Visibility.Collapsed;
+
             // Đặt lại vị trí và trạng thái ban đầu
             Canvas.SetTop(FlappyBird, 250);
             birdSpeed = 0;
@@ -103,14 +128,13 @@ namespace PRN212.G5.FlappyBird.Views
                 pipesBottom.Add(bottom);
             }
 
-            // Cấu hình game loop
-            gameTimer.Interval = TimeSpan.FromMilliseconds(20);
-            gameTimer.Tick += GameLoop;
             gameTimer.Start();
         }
 
         private void GameLoop(object? sender, EventArgs e)
         {
+            if (!isPlaying || isGameOver) return;
+
             double birdTop = Canvas.GetTop(FlappyBird);
             Canvas.SetTop(FlappyBird, birdTop + birdSpeed);
             birdSpeed += 1; // trọng lực
@@ -172,6 +196,9 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
+            // Chỉ cho nhảy khi đang chơi
+            if (!isPlaying || isGameOver) return;
+
             if (e.Key == Key.Space)
             {
                 birdSpeed = -10;
@@ -181,21 +208,39 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void EndGame()
         {
+            if (isGameOver) return;
+            isGameOver = true;
+
             gameTimer.Stop();
             //hitSound?.Play();
 
+            bool isNewHigh = false;
             if (score > highScore)
             {
                 highScore = score;
                 gameRepo.SaveHighScore(highScore); // Save high score qua repo
-                MessageBox.Show($"🎉 New High Score: {score}!", "Flappy Bird");
+                isNewHigh = true;
+            }
+
+            string msg = isNewHigh
+                ? $"🎉 New High Score: {score}!\n\nDo you want to play again?"
+                : $"Game Over! Your Score: {score}\n\nDo you want to play again?";
+            var result = MessageBox.Show(msg, "Flappy Bird", MessageBoxButton.YesNo, MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                StartGame();
             }
             else
             {
-                MessageBox.Show($"Game Over! Your Score: {score}", "Flappy Bird");
-                this.Close();
+                // Trở về màn hình Start thay vì thoát app
+                ShowStartScreen();
             }
+        }
 
+        // Sự kiện click nút Start
+        private void BtnStart_Click(object sender, RoutedEventArgs e)
+        {
             StartGame();
         }
     }

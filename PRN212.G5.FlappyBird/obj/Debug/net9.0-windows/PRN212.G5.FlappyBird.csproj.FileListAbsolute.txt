@@ -23,3 +23,4 @@ D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\PRN212.G5.FlappyBird\obj\Debug\
 D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\PRN212.G5.FlappyBird\obj\Debug\net9.0-windows\ref\PRN212.G5.FlappyBird.dll
 D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\PRN212.G5.FlappyBird\bin\Debug\net9.0-windows\FlappyBird.Data.dll
 D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\PRN212.G5.FlappyBird\bin\Debug\net9.0-windows\FlappyBird.Data.pdb
+D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\PRN212.G5.FlappyBird\obj\Debug\net9.0-windows\PRN212.G5.FlappyBird.sourcelink.json
