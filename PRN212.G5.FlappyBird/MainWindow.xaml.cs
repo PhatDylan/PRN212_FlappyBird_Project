@@ -27,7 +27,7 @@ namespace PRN212.G5.FlappyBird.Views
         private readonly List<Rectangle> clouds = new(); // danh sách đám mây
 
         private double pipeSpeed = 5; // tốc độ di chuyển ống
-        private const int gap = 150;  // khoảng cách giữa ống trên/dưới
+        private const int gap = 190;  // khoảng cách giữa ống trên/dưới
         private double cloudSpeed = 2; // tốc độ mây (chậm hơn pipe)
 
         private SoundPlayer? jumpSound;
@@ -36,32 +36,60 @@ namespace PRN212.G5.FlappyBird.Views
         private bool isGameOver = false;
         private bool isPlaying = false;
 
+        // Đẩy lứa ống đầu tiên ra xa + “grace period” sau khi bấm Play
+        private const double FirstPipeStartLeft = 1100; // vị trí ống đầu tiên (xa hơn để chim bay 1 đoạn)
+        private const double PipeSpacing = 320;         // khoảng cách giữa các cặp ống lúc khởi tạo & respawn
+        private const int StartGraceTicks = 60;         // ~1.2s nếu Interval = 20ms
+        private int graceTicksRemaining = 0;
+
+        // Kích thước sân chơi và ống
+        private const int CanvasHeight = 500;
+        private const int PipeWidth = 80;
+
         public MainWindow()
         {
             InitializeComponent();
             this.KeyDown += Window_KeyDown;
 
-            // Nếu có file âm thanh, bật 2 dòng dưới lên
             //jumpSound = new SoundPlayer("jump.wav");
-            //hitSound = new SoundPlayer("hit.wav");
+            //hitSound  = new SoundPlayer("hit.wav");
 
-            // Cấu hình game loop (đăng ký Tick 1 lần duy nhất)
             gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             gameTimer.Tick += GameLoop;
 
-            // Không auto start nữa, hiển thị màn hình bắt đầu
             ShowStartScreen();
         }
 
+        // =================== FLOW UI ===================
         private void ShowStartScreen()
         {
             isPlaying = false;
             isGameOver = false;
             gameTimer.Stop();
 
-            // Hiện nút Start
-            if (BtnStart != null)
-                BtnStart.Visibility = Visibility.Visible;
+            // Xóa toàn bộ vật thể động để về “trạng thái ban đầu”
+            ClearDynamicObjects();
+
+            // Reset điểm và hiển thị
+            score = 0;
+            ScoreText.Text = "Score: 0";
+
+            // Ẩn điểm ở Start screen (nếu muốn hiện HighScore ở Start, để Visible ở đây)
+            ScoreText.Visibility = Visibility.Collapsed;
+            HighScoreText.Visibility = Visibility.Collapsed;
+
+            // Load và hiển thị high score
+            highScore = gameRepo.LoadHighScore();
+            HighScoreText.Text = $"High Score: {highScore}";
+
+            // Đưa chim về vị trí gốc và dừng rơi
+            Canvas.SetLeft(FlappyBird, 70);
+            Canvas.SetTop(FlappyBird, 247);
+            birdSpeed = 0;
+
+            // Hiển thị StartPanel, ẩn GameOverPanel
+            if (StartPanel != null) StartPanel.Visibility = Visibility.Visible;
+            if (GameOverPanel != null) GameOverPanel.Visibility = Visibility.Collapsed;
         }
 
         private void StartGame()
@@ -69,30 +97,72 @@ namespace PRN212.G5.FlappyBird.Views
             isGameOver = false;
             isPlaying = true;
 
-            // Ẩn nút Start
-            if (BtnStart != null)
-                BtnStart.Visibility = Visibility.Collapsed;
+            StartPanel.Visibility = Visibility.Collapsed;
+            GameOverPanel.Visibility = Visibility.Collapsed;
 
-            // Đặt lại vị trí và trạng thái ban đầu
-            Canvas.SetTop(FlappyBird, 250);
+            // Hiện điểm khi người dùng bấm Play
+            ScoreText.Visibility = Visibility.Visible;
+            HighScoreText.Visibility = Visibility.Visible;
+
+            // Reset state
+            Canvas.SetLeft(FlappyBird, 70);
+            Canvas.SetTop(FlappyBird, 247);
             birdSpeed = 0;
             score = 0;
             pipeSpeed = 5;
             ScoreText.Text = "Score: 0";
 
-            // Load high score từ repo
+            // High score
             highScore = gameRepo.LoadHighScore();
             HighScoreText.Text = $"High Score: {highScore}";
 
-            // Xóa các ống và mây cũ
+            // Clear old objects & tạo lại
+            ClearDynamicObjects();
+            CreateClouds();
+            CreateInitialPipes(count: 4);
+
+            // Bật “grace period”: tạm bỏ qua va chạm một lúc sau khi Play
+            graceTicksRemaining = StartGraceTicks;
+
+            gameTimer.Start();
+        }
+
+        private void EndGame()
+        {
+            if (isGameOver) return;
+            isGameOver = true;
+            isPlaying = false;
+
+            gameTimer.Stop();
+            //hitSound?.Play();
+
+            // Cập nhật high score
+            if (score > highScore)
+            {
+                highScore = score;
+                gameRepo.SaveHighScore(highScore);
+            }
+
+            // Hiển thị overlay Game Over
+            GoScoreValue.Text = score.ToString();
+            GoBestScoreValue.Text = highScore.ToString();
+            GameOverPanel.Visibility = Visibility.Visible;
+        }
+
+        // =================== BUILD SCENE ===================
+        private void ClearDynamicObjects()
+        {
             foreach (var p in pipesTop) GameCanvas.Children.Remove(p);
             foreach (var p in pipesBottom) GameCanvas.Children.Remove(p);
             foreach (var c in clouds) GameCanvas.Children.Remove(c);
+
             pipesTop.Clear();
             pipesBottom.Clear();
             clouds.Clear();
+        }
 
-            // Tạo đám mây ngẫu nhiên
+        private void CreateClouds()
+        {
             for (int i = 0; i < 4; i++)
             {
                 Rectangle cloud = new()
@@ -109,28 +179,49 @@ namespace PRN212.G5.FlappyBird.Views
                 Canvas.SetTop(cloud, rnd.Next(20, 150));
                 clouds.Add(cloud);
             }
-
-            // Tạo cặp ống ban đầu
-            for (int i = 0; i < 4; i++)
-            {
-                Rectangle top = new() { Width = 80, Fill = Brushes.Green };
-                Rectangle bottom = new() { Width = 80, Fill = Brushes.Green };
-                GameCanvas.Children.Add(top);
-                GameCanvas.Children.Add(bottom);
-
-                double leftPos = 400 + i * 300;
-                Canvas.SetLeft(top, leftPos);
-                Canvas.SetLeft(bottom, leftPos);
-
-                RandomizePipe(top, bottom);
-
-                pipesTop.Add(top);
-                pipesBottom.Add(bottom);
-            }
-
-            gameTimer.Start();
         }
 
+        private void CreateInitialPipes(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                double leftPos = FirstPipeStartLeft + i * PipeSpacing;
+                CreatePipePair(leftPos);
+            }
+        }
+
+        private void CreatePipePair(double leftPos)
+        {
+            var top = new Rectangle { Width = PipeWidth, Fill = Brushes.Green };
+            var bottom = new Rectangle { Width = PipeWidth, Fill = Brushes.Green };
+
+            GameCanvas.Children.Add(top);
+            GameCanvas.Children.Add(bottom);
+
+            Canvas.SetLeft(top, leftPos);
+            Canvas.SetLeft(bottom, leftPos);
+
+            RandomizePipe(top, bottom);
+
+            pipesTop.Add(top);
+            pipesBottom.Add(bottom);
+        }
+
+        private void RandomizePipe(Rectangle top, Rectangle bottom)
+        {
+            // Random 1 lần khi tạo/respawn; KHÔNG dao động theo thời gian
+            int minTop = 50;
+            int maxTop = CanvasHeight - gap - 50; // để bottom >= 50
+            double topHeight = rnd.Next(minTop, maxTop + 1);
+
+            top.Height = topHeight;
+            bottom.Height = CanvasHeight - topHeight - gap;
+
+            Canvas.SetTop(top, 0);
+            Canvas.SetTop(bottom, top.Height + gap);
+        }
+
+        // =================== GAME LOOP ===================
         private void GameLoop(object? sender, EventArgs e)
         {
             if (!isPlaying || isGameOver) return;
@@ -139,61 +230,70 @@ namespace PRN212.G5.FlappyBird.Views
             Canvas.SetTop(FlappyBird, birdTop + birdSpeed);
             birdSpeed += 1; // trọng lực
 
-            // tăng tốc độ theo điểm
             double speed = pipeSpeed + score * 0.1;
 
-            // Cập nhật vị trí đám mây
+            if (graceTicksRemaining > 0) graceTicksRemaining--;
+
+            // Clouds
             foreach (var c in clouds)
             {
                 Canvas.SetLeft(c, Canvas.GetLeft(c) - cloudSpeed);
                 if (Canvas.GetLeft(c) < -150)
                 {
-                    Canvas.SetLeft(c, 800 + rnd.Next(0, 200));
+                    Canvas.SetLeft(c, 1000 + rnd.Next(0, 200));
                     Canvas.SetTop(c, rnd.Next(20, 150));
                 }
             }
 
-            // Cập nhật vị trí ống
+            // Pipes
             for (int i = 0; i < pipesTop.Count; i++)
             {
+                // Dịch trái đều
                 Canvas.SetLeft(pipesTop[i], Canvas.GetLeft(pipesTop[i]) - speed);
                 Canvas.SetLeft(pipesBottom[i], Canvas.GetLeft(pipesBottom[i]) - speed);
 
-                // Khi ống đi ra khỏi màn hình, dịch lại sang phải
-                if (Canvas.GetLeft(pipesTop[i]) < -80)
+                // Khi ống đi ra khỏi màn hình, respawn ở farthestRight + spacing để khoảng cách đều
+                if (Canvas.GetLeft(pipesTop[i]) < -PipeWidth)
                 {
-                    Canvas.SetLeft(pipesTop[i], 1000);
-                    Canvas.SetLeft(pipesBottom[i], 1000);
+                    double farthestRight = double.MinValue;
+                    for (int j = 0; j < pipesTop.Count; j++)
+                    {
+                        if (j == i) continue;
+                        farthestRight = Math.Max(farthestRight, Canvas.GetLeft(pipesTop[j]));
+                    }
+                    double newX = (farthestRight == double.MinValue)
+                        ? FirstPipeStartLeft
+                        : farthestRight + PipeSpacing;
+
+                    Canvas.SetLeft(pipesTop[i], newX);
+                    Canvas.SetLeft(pipesBottom[i], newX);
+
+                    // Random lại vertical 1 lần khi respawn (KHÔNG dao động)
                     RandomizePipe(pipesTop[i], pipesBottom[i]);
+
+                    // Cộng điểm
                     score++;
                     ScoreText.Text = $"Score: {score}";
                 }
 
-                // Kiểm tra va chạm
-                if (FlappyBird.CollidesWith(pipesTop[i]) || FlappyBird.CollidesWith(pipesBottom[i]))
+                // Kiểm tra va chạm (bỏ qua khi còn grace period)
+                if (graceTicksRemaining <= 0 &&
+                    (FlappyBird.CollidesWith(pipesTop[i]) || FlappyBird.CollidesWith(pipesBottom[i])))
                 {
                     EndGame();
                     return;
                 }
             }
 
-            // Chim rơi khỏi canvas hoặc chạm trần
-            if (birdTop < 0 || birdTop + FlappyBird.Height > 500)
+            // Chim rơi khỏi canvas hoặc chạm trần (bỏ qua khi còn grace period)
+            if (graceTicksRemaining <= 0 &&
+                (birdTop < 0 || birdTop + FlappyBird.Height > CanvasHeight))
             {
                 EndGame();
             }
         }
 
-        private void RandomizePipe(Rectangle top, Rectangle bottom)
-        {
-            double topHeight = rnd.Next(50, 250);
-            top.Height = topHeight;
-            bottom.Height = 500 - topHeight - gap;
-
-            Canvas.SetTop(top, 0);
-            Canvas.SetTop(bottom, top.Height + gap);
-        }
-
+        // =================== INPUT ===================
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             // Chỉ cho nhảy khi đang chơi
@@ -206,46 +306,13 @@ namespace PRN212.G5.FlappyBird.Views
             }
         }
 
-        private void EndGame()
-        {
-            if (isGameOver) return;
-            isGameOver = true;
-
-            gameTimer.Stop();
-            //hitSound?.Play();
-
-            bool isNewHigh = false;
-            if (score > highScore)
-            {
-                highScore = score;
-                gameRepo.SaveHighScore(highScore); // Save high score qua repo
-                isNewHigh = true;
-            }
-
-            string msg = isNewHigh
-                ? $"🎉 New High Score: {score}!\n\nDo you want to play again?"
-                : $"Game Over! Your Score: {score}\n\nDo you want to play again?";
-            var result = MessageBox.Show(msg, "Flappy Bird", MessageBoxButton.YesNo, MessageBoxImage.Question);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                StartGame();
-            }
-            else
-            {
-                // Trở về màn hình Start thay vì thoát app
-                ShowStartScreen();
-            }
-        }
-
-        // Sự kiện click nút Start
-        private void BtnStart_Click(object sender, RoutedEventArgs e)
-        {
-            StartGame();
-        }
+        // =================== BUTTONS ===================
+        private void BtnStart_Click(object sender, RoutedEventArgs e) => StartGame();
+        private void BtnReplay_Click(object sender, RoutedEventArgs e) => StartGame();
+        private void BtnLeft_Click(object sender, RoutedEventArgs e) => ShowStartScreen();
     }
 
-    // Phần để kiểm tra va chạm giữa các Rectangle
+    // Collision helper
     public static class CollisionExtensions
     {
         public static bool CollidesWith(this Rectangle a, Rectangle b)

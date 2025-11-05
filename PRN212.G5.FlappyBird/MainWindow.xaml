@@ -5,63 +5,133 @@
         KeyDown="Window_KeyDown"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
-    <Canvas x:Name="GameCanvas" Background="LightSkyBlue">
+    <Grid>
+        <!-- Lớp game -->
+        <Canvas x:Name="GameCanvas" Background="LightSkyBlue">
+            <!-- Mặt đất -->
+            <Rectangle x:Name="Ground"
+                       Fill="SandyBrown"
+                       Width="1000" Height="100"
+                       Canvas.Left="0" Canvas.Top="500"
+                       Panel.ZIndex="2" />
 
-        <!--Mặt đất -->
-        <Rectangle x:Name="Ground"
-                   Fill="SandyBrown"
-                   Width="1000" Height="100"
-                   Canvas.Left="0" Canvas.Top="500"
-                   Panel.ZIndex="2" />
+            <!-- Chim Flappy -->
+            <Rectangle x:Name="FlappyBird"
+                       Fill="Yellow"
+                       Width="50" Height="50"
+                       Canvas.Left="23" Canvas.Top="247" />
 
-        <!-- Chim Flappy -->
-        <Rectangle x:Name="FlappyBird"
-                   Fill="Yellow"
-                   Width="50" Height="50"
-                   Canvas.Left="70" Canvas.Top="247" />
+            <!-- Hiển thị điểm -->
+            <TextBlock x:Name="ScoreText"
+                       Text="Score: 0"
+                       FontSize="24"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       Canvas.Left="191" Canvas.Top="10"
+                       Panel.ZIndex="3"
+                       Visibility="Collapsed"/>
 
-        <!-- Ống trên 
-        <Rectangle x:Name="PipeTop"
-                   Fill="Green"
-                   Width="80" Height="200"
-                   Canvas.Left="800" HorizontalAlignment="Center" VerticalAlignment="Top" />
+            <!-- Hiển thị điểm cao -->
+            <TextBlock x:Name="HighScoreText"
+                       Text="High Score: 0"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       Foreground="Yellow"
+                       Canvas.Left="357" Canvas.Top="19"
+                       Panel.ZIndex="3"
+                       Visibility="Collapsed"/>
+        </Canvas>
 
-        Ống dưới
-        <Rectangle x:Name="PipeBottom"
-                   Fill="Green"
-                   Width="80" Height="100"
-                   Canvas.Left="800" Canvas.Top="400" HorizontalAlignment="Center" VerticalAlignment="Top" /> -->
+        <!-- START SCREEN -->
+        <Grid x:Name="StartPanel" Visibility="Visible" Panel.ZIndex="25" Background="#00000000">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <!-- Logo chữ -->
+                <TextBlock Text="FlappyBird"
+                           FontSize="64" FontWeight="Black"
+                           Foreground="#2ECC71"
+                           HorizontalAlignment="Center" Margin="0,0,0,16">
+                    <TextBlock.Effect>
+                        <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="White" Opacity="0.95"/>
+                    </TextBlock.Effect>
+                </TextBlock>
 
+                <!-- Nút Play -->
+                <Button Width="240" Height="120"
+                        Background="#FFFDFDFD"
+                        BorderBrush="#8E8E8E"
+                        BorderThickness="3"
+                        Click="BtnStart_Click"
+                        Cursor="Hand">
+                    <Border CornerRadius="22" >
+                        <Grid>
+                            <Path Fill="#1FB34A" Stretch="Uniform" Width="50" Height="50"
+                                  Data="M 0 0 L 0 50 L 43 25 Z"/>
+                        </Grid>
+                    </Border>
+                </Button>
+            </StackPanel>
+        </Grid>
 
-        <!--Hiển thị điểm -->
-        <TextBlock x:Name="ScoreText"
-                   Text="Score: 0"
-                   FontSize="24"
-                   FontWeight="Bold"
-                   Foreground="White"
-                   Canvas.Left="191" Canvas.Top="10"
-                   Panel.ZIndex="3" HorizontalAlignment="Left" VerticalAlignment="Center" />
+        <!-- GAME OVER overlay -->
+        <Grid x:Name="GameOverPanel" Visibility="Collapsed" Panel.ZIndex="30" Background="#80000000">
+            <Border Width="420" Padding="24" CornerRadius="12"
+                    Background="#9BD3F3" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="GAME OVER"
+                               FontSize="36" FontWeight="Black"
+                               Foreground="#1E5163"
+                               HorizontalAlignment="Center"/>
+                    <Rectangle Height="6" Fill="#E3A21A" Margin="0,12,0,24"/>
 
-        <!-- Hiển thị điểm cao -->
-        <TextBlock x:Name="HighScoreText"
-               Text="High Score: 0"
-               FontSize="16"
-               FontWeight="Bold"
-               Foreground="Yellow"
-               Canvas.Left="357" Canvas.Top="19"
-               Panel.ZIndex="3" HorizontalAlignment="Left" VerticalAlignment="Top" />
-        
-        <!-- Nút Start -->
-        <Button x:Name="BtnStart"
-            Content="Start"
-            Width="160" Height="48"
-            FontSize="20"
-            Click="BtnStart_Click"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            Panel.ZIndex="10"/>
+                    <!-- SCORE -->
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="SCORE" FontSize="22" FontWeight="SemiBold" Foreground="#1E5163"/>
+                        <TextBlock x:Name="GoScoreValue" Grid.Column="1" Text="0" FontSize="22" FontWeight="Bold" Foreground="#1E5163"/>
+                    </Grid>
 
+                    <!-- BEST SCORE -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="BEST SCORE" FontSize="22" FontWeight="SemiBold" Foreground="#1E5163"/>
+                        <TextBlock x:Name="GoBestScoreValue" Grid.Column="1" Text="0" FontSize="22" FontWeight="Bold" Foreground="#1E5163"/>
+                    </Grid>
 
+                    <Rectangle Height="6" Fill="#E3A21A" Margin="0,24,0,16"/>
 
-    </Canvas>
+                    <!-- Nút REPLAY / LEFT -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+
+                        <Button Grid.Column="0"
+                                Content="REPLAY"
+                                Width="160" Height="48"
+                                FontSize="20" FontWeight="SemiBold"
+                                Background="#3B8DAE" Foreground="White"
+                                BorderBrush="#1E5163" BorderThickness="2"
+                                Click="BtnReplay_Click"
+                                Margin="0,0,8,0"/>
+
+                        <Button Grid.Column="1"
+                                Content="LEFT"
+                                Width="160" Height="48"
+                                FontSize="20" FontWeight="SemiBold"
+                                Background="#D68F00" Foreground="White"
+                                BorderBrush="#845D00" BorderThickness="2"
+                                Click="BtnLeft_Click"
+                                Margin="8,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
 </Window>
