@@ -7,24 +7,8 @@
       "RelativeMoniker": "D:0:0:{407B17EB-488D-4ACD-B64C-F38D8750BAE8}|PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj|solutionrelative:prn212.g5.flappybird\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{407B17EB-488D-4ACD-B64C-F38D8750BAE8}|PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\prn212.g5.flappybird\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{407B17EB-488D-4ACD-B64C-F38D8750BAE8}|PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj|solutionrelative:prn212.g5.flappybird\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\models\\bird.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|solutionrelative:flappybird.business\\models\\bird.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{74F56AAC-68F5-4139-961B-3ADFC8EC5114}|FlappyBird.Data\\FlappyBird.Data.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.data\\repositories\\gamerepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{74F56AAC-68F5-4139-961B-3ADFC8EC5114}|FlappyBird.Data\\FlappyBird.Data.csproj|solutionrelative:flappybird.data\\repositories\\gamerepo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\flappybird.business.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|solutionrelative:flappybird.business\\flappybird.business.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\models\\pipe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|solutionrelative:flappybird.business\\models\\pipe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\models\\gameengine.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -33,6 +17,22 @@
     {
       "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\models\\gamestate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|solutionrelative:flappybird.business\\models\\gamestate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\models\\pipe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|solutionrelative:flappybird.business\\models\\pipe.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\models\\bird.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|solutionrelative:flappybird.business\\models\\bird.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{407B17EB-488D-4ACD-B64C-F38D8750BAE8}|PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\prn212.g5.flappybird\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{407B17EB-488D-4ACD-B64C-F38D8750BAE8}|PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj|solutionrelative:prn212.g5.flappybird\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\flappybird.business\\flappybird.business.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{491C847C-8E65-4BAC-B921-FF2341D0D0C0}|FlappyBird.Business\\FlappyBird.Business.csproj|solutionrelative:flappybird.business\\flappybird.business.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
       "AbsoluteMoniker": "D:0:0:{407B17EB-488D-4ACD-B64C-F38D8750BAE8}|PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj|d:\\prn212-fpt\\25.1.se1815\\project\\flappybirdgame\\prn212.g5.flappybird\\prn212.g5.flappybird.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
@@ -60,26 +60,26 @@
               "RelativeDocumentMoniker": "PRN212.G5.FlappyBird\\MainWindow.xaml.cs",
               "ToolTip": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\PRN212.G5.FlappyBird\\MainWindow.xaml.cs*",
               "RelativeToolTip": "PRN212.G5.FlappyBird\\MainWindow.xaml.cs*",
-              "ViewState": "AgIAADcAAAAAAAAAAAAwwEQAAAAfAAAAAAAAAA==",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAAB0AAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-28T03:04:55.628Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 6,
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\PRN212.G5.FlappyBird\\MainWindow.xaml",
               "RelativeDocumentMoniker": "PRN212.G5.FlappyBird\\MainWindow.xaml",
-              "ToolTip": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\PRN212.G5.FlappyBird\\MainWindow.xaml*",
-              "RelativeToolTip": "PRN212.G5.FlappyBird\\MainWindow.xaml*",
+              "ToolTip": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\PRN212.G5.FlappyBird\\MainWindow.xaml",
+              "RelativeToolTip": "PRN212.G5.FlappyBird\\MainWindow.xaml",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
               "WhenOpened": "2025-10-28T03:04:58.853Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 2,
               "Title": "GameEngine.cs",
               "DocumentMoniker": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Business\\Models\\GameEngine.cs",
               "RelativeDocumentMoniker": "FlappyBird.Business\\Models\\GameEngine.cs",
@@ -87,11 +87,12 @@
               "RelativeToolTip": "FlappyBird.Business\\Models\\GameEngine.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAG8AAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T03:40:12.789Z"
+              "WhenOpened": "2025-10-28T03:40:12.789Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 4,
               "Title": "Pipe.cs",
               "DocumentMoniker": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Business\\Models\\Pipe.cs",
               "RelativeDocumentMoniker": "FlappyBird.Business\\Models\\Pipe.cs",
@@ -99,36 +100,38 @@
               "RelativeToolTip": "FlappyBird.Business\\Models\\Pipe.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T12:22:48.316Z"
+              "WhenOpened": "2025-10-28T12:22:48.316Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 1,
               "Title": "GameRepo.cs",
               "DocumentMoniker": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Data\\Repositories\\GameRepo.cs",
               "RelativeDocumentMoniker": "FlappyBird.Data\\Repositories\\GameRepo.cs",
               "ToolTip": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Data\\Repositories\\GameRepo.cs",
               "RelativeToolTip": "FlappyBird.Data\\Repositories\\GameRepo.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAwAAAAiAAAAAAAAAA==",
+              "ViewState": "AgIAAAgAAAAAAAAAAAAxwAwAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-28T03:30:18.631Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 3,
               "Title": "GameState.cs",
               "DocumentMoniker": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Business\\Models\\GameState.cs",
               "RelativeDocumentMoniker": "FlappyBird.Business\\Models\\GameState.cs",
               "ToolTip": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Business\\Models\\GameState.cs",
               "RelativeToolTip": "FlappyBird.Business\\Models\\GameState.cs",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAABEAAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-28T03:37:58.414Z"
+              "WhenOpened": "2025-10-28T03:37:58.414Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 7,
               "Title": "FlappyBird.Business.csproj",
               "DocumentMoniker": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Business\\FlappyBird.Business.csproj",
               "RelativeDocumentMoniker": "FlappyBird.Business\\FlappyBird.Business.csproj",
@@ -140,13 +143,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 5,
               "Title": "Bird.cs",
               "DocumentMoniker": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Business\\Models\\Bird.cs",
               "RelativeDocumentMoniker": "FlappyBird.Business\\Models\\Bird.cs",
               "ToolTip": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Business\\Models\\Bird.cs",
               "RelativeToolTip": "FlappyBird.Business\\Models\\Bird.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAAAAABQAAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAABQAAAAAAAAAAAAswBQAAAAJAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-28T03:35:26.859Z",
               "EditorCaption": ""
