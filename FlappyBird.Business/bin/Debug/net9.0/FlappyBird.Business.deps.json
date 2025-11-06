@@ -7,30 +7,14 @@
   "targets": {
     ".NETCoreApp,Version=v9.0": {
       "FlappyBird.Business/1.0.0": {
-        "dependencies": {
-          "FlappyBird.Data": "1.0.0"
-        },
         "runtime": {
           "FlappyBird.Business.dll": {}
-        }
-      },
-      "FlappyBird.Data/1.0.0": {
-        "runtime": {
-          "FlappyBird.Data.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
-          }
         }
       }
     }
   },
   "libraries": {
     "FlappyBird.Business/1.0.0": {
-      "type": "project",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "FlappyBird.Data/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

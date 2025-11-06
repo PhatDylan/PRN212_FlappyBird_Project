@@ -1,30 +1,49 @@
 {
   "version": 3,
   "targets": {
-    "net9.0": {}
+    "net9.0": {
+      "FlappyBird.Business/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v9.0",
+        "compile": {
+          "bin/placeholder/FlappyBird.Business.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/FlappyBird.Business.dll": {}
+        }
+      }
+    }
   },
-  "libraries": {},
+  "libraries": {
+    "FlappyBird.Business/1.0.0": {
+      "type": "project",
+      "path": "../FlappyBird.Business/FlappyBird.Business.csproj",
+      "msbuildProject": "../FlappyBird.Business/FlappyBird.Business.csproj"
+    }
+  },
   "projectFileDependencyGroups": {
-    "net9.0": []
+    "net9.0": [
+      "FlappyBird.Business >= 1.0.0"
+    ]
   },
   "packageFolders": {
-    "C:\\Users\\Admin\\.nuget\\packages\\": {},
+    "C:\\Users\\ADMIN\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Data\\FlappyBird.Data.csproj",
+      "projectUniqueName": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj",
       "projectName": "FlappyBird.Data",
-      "projectPath": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Data\\FlappyBird.Data.csproj",
-      "packagesPath": "C:\\Users\\Admin\\.nuget\\packages\\",
-      "outputPath": "D:\\PRN212-FPT\\25.1.SE1815\\Project\\FlappyBirdGame\\FlappyBird.Data\\obj\\",
+      "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj",
+      "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
+      "outputPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\Admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -33,13 +52,16 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj": {
+              "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
@@ -73,7 +95,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

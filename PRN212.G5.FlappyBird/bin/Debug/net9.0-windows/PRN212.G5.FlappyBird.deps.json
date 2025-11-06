@@ -8,16 +8,14 @@
     ".NETCoreApp,Version=v9.0": {
       "PRN212.G5.FlappyBird/1.0.0": {
         "dependencies": {
-          "FlappyBird.Business": "1.0.0"
+          "FlappyBird.Business": "1.0.0",
+          "FlappyBird.Data": "1.0.0"
         },
         "runtime": {
           "PRN212.G5.FlappyBird.dll": {}
         }
       },
       "FlappyBird.Business/1.0.0": {
-        "dependencies": {
-          "FlappyBird.Data": "1.0.0"
-        },
         "runtime": {
           "FlappyBird.Business.dll": {
             "assemblyVersion": "1.0.0.0",
@@ -26,6 +24,9 @@
         }
       },
       "FlappyBird.Data/1.0.0": {
+        "dependencies": {
+          "FlappyBird.Business": "1.0.0"
+        },
         "runtime": {
           "FlappyBird.Data.dll": {
             "assemblyVersion": "1.0.0.0",
