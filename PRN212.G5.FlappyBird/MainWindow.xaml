@@ -40,37 +40,186 @@
                        Canvas.Left="357" Canvas.Top="19"
                        Panel.ZIndex="3"
                        Visibility="Collapsed"/>
-        </Canvas>
 
-        <!-- START SCREEN -->
-        <Grid x:Name="StartPanel" Visibility="Visible" Panel.ZIndex="25" Background="#00000000">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <!-- Logo chữ -->
-                <TextBlock Text="FlappyBird"
-                           FontSize="64" FontWeight="Black"
-                           Foreground="#2ECC71"
-                           HorizontalAlignment="Center" Margin="0,0,0,16">
-                    <TextBlock.Effect>
-                        <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="White" Opacity="0.95"/>
-                    </TextBlock.Effect>
-                </TextBlock>
-
-                <!-- Nút Play -->
-                <Button Width="240" Height="120"
-                        Background="#FFFDFDFD"
-                        BorderBrush="#8E8E8E"
-                        BorderThickness="3"
-                        Click="BtnStart_Click"
-                        Cursor="Hand">
-                    <Border CornerRadius="22" >
+            <!-- User info and profile button -->
+            <Border x:Name="UserInfoPanel"
+                    Panel.ZIndex="30"
+                    Background="#80000000"
+                    CornerRadius="10"
+                    Padding="10,6"
+                    Canvas.Right="10" Canvas.Top="10"
+                    Visibility="Visible">
+                <StackPanel Orientation="Horizontal">
+                    <!-- Avatar -->
+                    <Border Width="32" Height="32"
+                            CornerRadius="16"
+                            Background="#E0E0E0"
+                            BorderBrush="White"
+                            BorderThickness="2"
+                            Margin="0,0,8,0">
                         <Grid>
-                            <Path Fill="#1FB34A" Stretch="Uniform" Width="50" Height="50"
-                                  Data="M 0 0 L 0 50 L 43 25 Z"/>
+                            <Image x:Name="UserAvatarImage"
+                                   Stretch="UniformToFill"
+                                   ClipToBounds="True">
+                                <Image.Clip>
+                                    <EllipseGeometry Center="16,16" RadiusX="16" RadiusY="16"/>
+                                </Image.Clip>
+                            </Image>
+                            <TextBlock Text="👤" 
+                                       FontSize="20"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       x:Name="DefaultAvatarText"/>
                         </Grid>
                     </Border>
-                </Button>
-            </StackPanel>
+                    <TextBlock x:Name="UserNameText"
+                               Text=""
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Foreground="White"
+                               VerticalAlignment="Center"
+                               Margin="0,0,10,0"/>
+                    <Button x:Name="ProfileButton"
+                            Content="👤 Hồ sơ"
+                            FontSize="11"
+                            Padding="8,4"
+                            Background="#3498DB"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Click="ProfileButton_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="border"
+                                                    CornerRadius="4"
+                                                    Background="{TemplateBinding Background}"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="border" Property="Background" Value="#2980B9"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button x:Name="LogoutButton"
+                            Content="Đăng xuất"
+                            FontSize="11"
+                            Padding="8,4"
+                            Background="#E74C3C"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Cursor="Hand"
+                            Click="LogoutButton_Click"
+                            Margin="5,0,0,0">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border x:Name="border"
+                                                    CornerRadius="4"
+                                                    Background="{TemplateBinding Background}"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="border" Property="Background" Value="#C0392B"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </Border>
+        </Canvas>
+
+        <!-- START SCREEN - Background overlay -->
+        <Grid x:Name="StartPanel" Visibility="Visible" Panel.ZIndex="25" Background="#00000000" IsHitTestVisible="False">
+            <!-- Background không chặn input -->
         </Grid>
+        
+        <!-- START SCREEN - UI Elements (đặt trực tiếp trong Grid chính) -->
+        <StackPanel x:Name="StartPanelUI" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Center" 
+                    Panel.ZIndex="26" 
+                    IsHitTestVisible="True"
+                    Visibility="Visible">
+            <!-- Logo chữ -->
+            <TextBlock Text="FlappyBird"
+                       FontSize="64" FontWeight="Black"
+                       Foreground="#2ECC71"
+                       HorizontalAlignment="Center" Margin="0,0,0,16"
+                       IsHitTestVisible="False">
+                <TextBlock.Effect>
+                    <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="White" Opacity="0.95"/>
+                </TextBlock.Effect>
+            </TextBlock>
+            
+            <!-- Nút Play -->
+            <Button x:Name="StartButton"
+                    Width="240" Height="120"
+                    Background="#FFFDFDFD"
+                    BorderBrush="#8E8E8E"
+                    BorderThickness="3"
+                    Click="BtnStart_Click"
+                    Cursor="Hand"
+                    Padding="0"
+                    Margin="0,10,0,0">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="border"
+                                            CornerRadius="20"
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="border" Property="Background" Value="#E0E0E0"/>
+                                            <Setter TargetName="border" Property="BorderBrush" Value="#666666"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="border" Property="Background" Value="#D0D0D0"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+                <Button.Content>
+                    <Grid Width="240" Height="120">
+                        <Border CornerRadius="20" Background="#F0F0F0" Margin="0,0,4,10" />
+                        <Path Fill="#1FB34A" 
+                              Stretch="Uniform" 
+                              Width="50" Height="50"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              IsHitTestVisible="False"
+                              Data="M 0 0 L 0 50 L 43 25 Z"/>
+                    </Grid>
+                </Button.Content>
+            </Button>
+        </StackPanel>
 
         <!-- GAME OVER overlay -->
         <Grid x:Name="GameOverPanel" Visibility="Collapsed" Panel.ZIndex="30" Background="#80000000">

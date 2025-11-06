@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FlappyBird.Business\FlappyBird.Business.csproj" />
+  </ItemGroup>
+
 </Project>

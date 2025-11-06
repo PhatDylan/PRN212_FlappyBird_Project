@@ -2,11 +2,13 @@
 using FlappyBird.Data.Repositories;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Media;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
@@ -16,6 +18,8 @@ namespace PRN212.G5.FlappyBird.Views
     {
         private readonly DispatcherTimer gameTimer = new();
         private readonly GameRepo gameRepo = new();   // Dùng GameRepo để load/save điểm
+        private readonly AccountRepo accountRepo = new();
+        private Account currentAccount;
 
         private double birdSpeed = 0;
         private int score = 0;
@@ -46,9 +50,10 @@ namespace PRN212.G5.FlappyBird.Views
         private const int CanvasHeight = 500;
         private const int PipeWidth = 80;
 
-        public MainWindow()
+        public MainWindow(Account account)
         {
             InitializeComponent();
+            currentAccount = account;
             this.KeyDown += Window_KeyDown;
 
             //jumpSound = new SoundPlayer("jump.wav");
@@ -56,6 +61,18 @@ namespace PRN212.G5.FlappyBird.Views
 
             gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             gameTimer.Tick += GameLoop;
+
+            // Update UI with account info
+            UserNameText.Text = currentAccount.Name;
+            Title = $"Flappy Bird - {currentAccount.Name}";
+            LoadUserAvatar();
+
+            // Đảm bảo StartButton có event handler
+            if (StartButton != null)
+            {
+                StartButton.Click -= BtnStart_Click; // Remove để tránh duplicate
+                StartButton.Click += BtnStart_Click;
+            }
 
             ShowStartScreen();
         }
@@ -78,8 +95,8 @@ namespace PRN212.G5.FlappyBird.Views
             ScoreText.Visibility = Visibility.Collapsed;
             HighScoreText.Visibility = Visibility.Collapsed;
 
-            // Load và hiển thị high score
-            highScore = gameRepo.LoadHighScore();
+            // Load và hiển thị high score từ account
+            highScore = currentAccount.HighScore;
             HighScoreText.Text = $"High Score: {highScore}";
 
             // Đưa chim về vị trí gốc và dừng rơi
@@ -89,42 +106,77 @@ namespace PRN212.G5.FlappyBird.Views
 
             // Hiển thị StartPanel, ẩn GameOverPanel
             if (StartPanel != null) StartPanel.Visibility = Visibility.Visible;
+            if (StartPanelUI != null) StartPanelUI.Visibility = Visibility.Visible;
             if (GameOverPanel != null) GameOverPanel.Visibility = Visibility.Collapsed;
         }
 
         private void StartGame()
         {
-            isGameOver = false;
-            isPlaying = true;
+            try
+            {
+                isGameOver = false;
+                isPlaying = true;
 
-            StartPanel.Visibility = Visibility.Collapsed;
-            GameOverPanel.Visibility = Visibility.Collapsed;
+                // Ẩn StartPanel và StartPanelUI
+                if (StartPanel != null)
+                {
+                    StartPanel.Visibility = Visibility.Collapsed;
+                    StartPanel.IsHitTestVisible = false;
+                }
+                if (StartPanelUI != null)
+                {
+                    StartPanelUI.Visibility = Visibility.Collapsed;
+                }
+                
+                // Đảm bảo GameCanvas có thể nhận input
+                if (GameCanvas != null)
+                {
+                    GameCanvas.Focusable = true;
+                    GameCanvas.Focus();
+                }
+                
+                if (GameOverPanel != null)
+                {
+                    GameOverPanel.Visibility = Visibility.Collapsed;
+                }
 
-            // Hiện điểm khi người dùng bấm Play
-            ScoreText.Visibility = Visibility.Visible;
-            HighScoreText.Visibility = Visibility.Visible;
+                // Hiện điểm khi người dùng bấm Play
+                if (ScoreText != null) ScoreText.Visibility = Visibility.Visible;
+                if (HighScoreText != null) HighScoreText.Visibility = Visibility.Visible;
 
-            // Reset state
-            Canvas.SetLeft(FlappyBird, 70);
-            Canvas.SetTop(FlappyBird, 247);
-            birdSpeed = 0;
-            score = 0;
-            pipeSpeed = 5;
-            ScoreText.Text = "Score: 0";
+                // Reset state
+                if (FlappyBird != null)
+                {
+                    Canvas.SetLeft(FlappyBird, 70);
+                    Canvas.SetTop(FlappyBird, 247);
+                }
+                birdSpeed = 0;
+                score = 0;
+                pipeSpeed = 5;
+                if (ScoreText != null) ScoreText.Text = "Score: 0";
 
-            // High score
-            highScore = gameRepo.LoadHighScore();
-            HighScoreText.Text = $"High Score: {highScore}";
+                // High score từ account
+                highScore = currentAccount.HighScore;
+                if (HighScoreText != null) HighScoreText.Text = $"High Score: {highScore}";
 
-            // Clear old objects & tạo lại
-            ClearDynamicObjects();
-            CreateClouds();
-            CreateInitialPipes(count: 4);
+                // Clear old objects & tạo lại
+                ClearDynamicObjects();
+                CreateClouds();
+                CreateInitialPipes(count: 4);
 
-            // Bật “grace period”: tạm bỏ qua va chạm một lúc sau khi Play
-            graceTicksRemaining = StartGraceTicks;
+                // Bật "grace period": tạm bỏ qua va chạm một lúc sau khi Play
+                graceTicksRemaining = StartGraceTicks;
 
-            gameTimer.Start();
+                // Start game timer
+                if (gameTimer != null)
+                {
+                    gameTimer.Start();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi bắt đầu game: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void EndGame()
@@ -136,11 +188,13 @@ namespace PRN212.G5.FlappyBird.Views
             gameTimer.Stop();
             //hitSound?.Play();
 
-            // Cập nhật high score
+            // Cập nhật high score vào account
             if (score > highScore)
             {
                 highScore = score;
-                gameRepo.SaveHighScore(highScore);
+                accountRepo.UpdateHighScore(currentAccount.Email, highScore);
+                // Update local account object
+                currentAccount.HighScore = highScore;
             }
 
             // Hiển thị overlay Game Over
@@ -307,9 +361,117 @@ namespace PRN212.G5.FlappyBird.Views
         }
 
         // =================== BUTTONS ===================
-        private void BtnStart_Click(object sender, RoutedEventArgs e) => StartGame();
+        private void BtnStart_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                StartGame();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error in BtnStart_Click: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private void BtnReplay_Click(object sender, RoutedEventArgs e) => StartGame();
         private void BtnLeft_Click(object sender, RoutedEventArgs e) => ShowStartScreen();
+
+        private void ProfileButton_Click(object sender, RoutedEventArgs e)
+        {
+            var profileWindow = new ProfileWindow(currentAccount);
+            if (profileWindow.ShowDialog() == true && profileWindow.UpdatedAccount != null)
+            {
+                // Update account info
+                currentAccount = profileWindow.UpdatedAccount;
+                UserNameText.Text = currentAccount.Name;
+                Title = $"Flappy Bird - {currentAccount.Name}";
+                
+                // Refresh avatar
+                LoadUserAvatar();
+                
+                // Refresh high score display
+                highScore = currentAccount.HighScore;
+                HighScoreText.Text = $"High Score: {highScore}";
+            }
+        }
+
+        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show("Bạn có chắc chắn muốn đăng xuất?", "Xác nhận", 
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            
+            if (result == MessageBoxResult.Yes)
+            {
+                // Stop game if playing
+                if (isPlaying || isGameOver)
+                {
+                    gameTimer.Stop();
+                    isPlaying = false;
+                    isGameOver = false;
+                    ClearDynamicObjects();
+                }
+                
+                // Hide current game window
+                this.Hide();
+                
+                // Show login window
+                var loginWindow = new LoginWindow();
+                if (loginWindow.ShowDialog() == true && loginWindow.LoggedInAccount != null)
+                {
+                    // Update account and restart game
+                    currentAccount = loginWindow.LoggedInAccount;
+                    UserNameText.Text = currentAccount.Name;
+                    Title = $"Flappy Bird - {currentAccount.Name}";
+                    LoadUserAvatar();
+                    highScore = currentAccount.HighScore;
+                    HighScoreText.Text = $"High Score: {highScore}";
+                    
+                    // Reset game state
+                    score = 0;
+                    ScoreText.Text = "Score: 0";
+                    ShowStartScreen();
+                    
+                    // Show window again
+                    this.Show();
+                }
+                else
+                {
+                    // User closed login - close app
+                    this.Close();
+                    Application.Current.Shutdown();
+                }
+            }
+        }
+
+        private void LoadUserAvatar()
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(currentAccount.Avatar))
+                {
+                    byte[] imageBytes = Convert.FromBase64String(currentAccount.Avatar);
+                    BitmapImage bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.StreamSource = new MemoryStream(imageBytes);
+                    bitmap.DecodePixelWidth = 64;
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+
+                    UserAvatarImage.Source = bitmap;
+                    DefaultAvatarText.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    UserAvatarImage.Source = null;
+                    DefaultAvatarText.Visibility = Visibility.Visible;
+                }
+            }
+            catch
+            {
+                UserAvatarImage.Source = null;
+                DefaultAvatarText.Visibility = Visibility.Visible;
+            }
+        }
     }
 
     // Collision helper

@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FlappyBird.Business\FlappyBird.Business.csproj" />
+    <ProjectReference Include="..\FlappyBird.Data\FlappyBird.Data.csproj" />
   </ItemGroup>
 
 </Project>

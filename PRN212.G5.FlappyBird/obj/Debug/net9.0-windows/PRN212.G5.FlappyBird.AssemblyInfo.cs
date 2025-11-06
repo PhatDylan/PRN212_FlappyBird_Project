@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PRN212.G5.FlappyBird")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c84933e5bc43e529331e2c3f6b9f5d8254d91acb")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+85cb3513123fe34bddfe1fbe62cf225962965d77")]
 [assembly: System.Reflection.AssemblyProductAttribute("PRN212.G5.FlappyBird")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PRN212.G5.FlappyBird")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
