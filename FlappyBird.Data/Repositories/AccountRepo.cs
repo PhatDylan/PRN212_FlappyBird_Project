@@ -1,4 +1,5 @@
 using FlappyBird.Business.Models;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -129,6 +130,17 @@ namespace FlappyBird.Data.Repositories
             }
 
             return true;
+        }
+
+        public List<Account> GetTopScores(int topCount = 10)
+        {
+            var accounts = LoadAccounts();
+            return accounts
+                .Where(a => a.HighScore > 0)
+                .OrderByDescending(a => a.HighScore)
+                .ThenBy(a => a.CreatedAt)
+                .Take(topCount)
+                .ToList();
         }
     }
 }

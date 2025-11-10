@@ -195,6 +195,8 @@ namespace PRN212.G5.FlappyBird.Views
                 accountRepo.UpdateHighScore(currentAccount.Email, highScore);
                 // Update local account object
                 currentAccount.HighScore = highScore;
+                // Update high score display on canvas
+                if (HighScoreText != null) HighScoreText.Text = $"High Score: {highScore}";
             }
 
             // Hiển thị overlay Game Over
@@ -392,6 +394,12 @@ namespace PRN212.G5.FlappyBird.Views
                 highScore = currentAccount.HighScore;
                 HighScoreText.Text = $"High Score: {highScore}";
             }
+        }
+
+        private void LeaderboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            var leaderboardWindow = new LeaderboardWindow(currentAccount);
+            leaderboardWindow.ShowDialog();
         }
 
         private void LogoutButton_Click(object sender, RoutedEventArgs e)

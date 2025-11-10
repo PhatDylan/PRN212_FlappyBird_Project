@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\PRN212\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj": {}
+    "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj": {}
   },
   "projects": {
-    "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj": {
+    "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj",
+        "projectUniqueName": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj",
         "projectName": "FlappyBird.Business",
-        "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj",
-        "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
-        "outputPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\obj\\",
+        "projectPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -65,24 +65,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj": {
+    "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj",
+        "projectUniqueName": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj",
         "projectName": "FlappyBird.Data",
-        "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj",
-        "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
-        "outputPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\obj\\",
+        "projectPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Data\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -97,8 +97,8 @@
           "net9.0": {
             "targetAlias": "net9.0",
             "projectReferences": {
-              "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj": {
-                "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj"
+              "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj": {
+                "projectPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj"
               }
             }
           }
@@ -134,24 +134,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "D:\\PRN212\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj": {
+    "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\PRN212\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj",
+        "projectUniqueName": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj",
         "projectName": "PRN212.G5.FlappyBird",
-        "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj",
-        "packagesPath": "C:\\Users\\ADMIN\\.nuget\\packages\\",
-        "outputPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\obj\\",
+        "projectPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\PRN212.G5.FlappyBird.csproj",
+        "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\PRN212.G5.FlappyBird\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\ADMIN\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -166,11 +166,11 @@
           "net9.0-windows7.0": {
             "targetAlias": "net9.0-windows",
             "projectReferences": {
-              "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj": {
-                "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj"
+              "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj": {
+                "projectPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Business\\FlappyBird.Business.csproj"
               },
-              "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj": {
-                "projectPath": "D:\\PRN212\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj"
+              "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj": {
+                "projectPath": "C:\\Users\\Administrator\\Desktop\\PRN212_FlappyBird_Project\\FlappyBird.Data\\FlappyBird.Data.csproj"
               }
             }
           }
@@ -209,7 +209,7 @@
               "privateAssets": "none"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.305/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
