@@ -46,7 +46,7 @@ namespace PRN212.G5.FlappyBird {
         /// </summary>
         [System.STAThreadAttribute()]
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "9.0.8.0")]
+        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "9.0.10.0")]
         public static void Main() {
             PRN212.G5.FlappyBird.App app = new PRN212.G5.FlappyBird.App();
             app.Run();
