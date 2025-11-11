@@ -1,5 +1,6 @@
-using System;
+ï»¿using System;
 using System.Windows;
+using System.Windows.Media;
 using PRN212.G5.FlappyBird.Views;
 
 namespace PRN212.G5.FlappyBird
@@ -11,7 +12,9 @@ namespace PRN212.G5.FlappyBird
         private const double MaxPipeSpeed = 10.0;
 
         private double selectedPipeSpeed = DefaultPipeSpeed;
-        private double musicVolume = 50; // Volume m?c ??nh 50%
+        private double musicVolume = 50;
+
+        private MediaPlayer mediaPlayer; // DÃ¹ng MediaPlayer thay vÃ¬ MediaElement
 
         public LoginWindow(double initialPipeSpeed = DefaultPipeSpeed)
         {
@@ -19,28 +22,55 @@ namespace PRN212.G5.FlappyBird
 
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
 
-            // B?t ??u phát nh?c n?n khi window ???c load
+            // Khá»Ÿi táº¡o MediaPlayer
+            InitializeMediaPlayer();
+
             Loaded += LoginWindow_Loaded;
+        }
+
+        private void InitializeMediaPlayer()
+        {
+            try
+            {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
+
+                // Load nháº¡c tá»« resource
+                var uri = new Uri("pack://application:,,,/Assets/BGM.mp3");
+                mediaPlayer.Open(uri);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"KhÃ´ng thá»ƒ load nháº¡c: {ex.Message}");
+            }
         }
 
         private void LoginWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // ??t âm l??ng và phát nh?c n?n
-            BackgroundMusic.Volume = musicVolume / 100.0; // Chuy?n ??i t? 0-100 sang 0-1
-            BackgroundMusic.Play();
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Volume = musicVolume / 100.0;
+                mediaPlayer.Play();
+            }
         }
 
-        private void BackgroundMusic_MediaEnded(object sender, RoutedEventArgs e)
+        private void MediaPlayer_MediaEnded(object sender, EventArgs e)
         {
-            // Khi nh?c k?t thúc, quay l?i ??u và phát l?i (l?p)
-            BackgroundMusic.Position = TimeSpan.Zero;
-            BackgroundMusic.Play();
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Position = TimeSpan.Zero;
+                mediaPlayer.Play();
+            }
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            // D?ng nh?c khi chuy?n sang màn hình chính
-            BackgroundMusic.Stop();
+            // Dá»«ng vÃ  giáº£i phÃ³ng MediaPlayer
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Stop();
+                mediaPlayer.Close();
+            }
 
             var mainWindow = new MainWindow(selectedPipeSpeed);
             Application.Current.MainWindow = mainWindow;
@@ -61,14 +91,34 @@ namespace PRN212.G5.FlappyBird
                 selectedPipeSpeed = Math.Clamp(settingsWindow.SelectedPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
                 musicVolume = settingsWindow.SelectedVolume;
 
-                // C?p nh?t âm l??ng nh?c ngay l?p t?c
-                BackgroundMusic.Volume = musicVolume / 100.0;
+                // Cáº­p nháº­t volume
+                if (mediaPlayer != null)
+                {
+                    mediaPlayer.Volume = musicVolume / 100.0;
+                }
             }
         }
 
         private void SkinsButton_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("Skins clicked (TODO).", "Skins", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            // Cleanup khi Ä‘Ã³ng window
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Stop();
+                mediaPlayer.Close();
+                mediaPlayer = null;
+            }
+            base.OnClosed(e);
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

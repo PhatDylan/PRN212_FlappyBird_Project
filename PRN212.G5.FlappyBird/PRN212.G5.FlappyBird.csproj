@@ -35,9 +35,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Resource Include="Assets\BGM.mp3">
+    <Content Include="Assets\BGM.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Resource>
+    </Content>
     <Resource Include="Assets\birdfall-1.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

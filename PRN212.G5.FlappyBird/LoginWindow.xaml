@@ -8,13 +8,6 @@
         ResizeMode="NoResize">
 
     <Grid>
-        <!-- Background Music -->
-        <MediaElement x:Name="BackgroundMusic"
-                      Source="/Assets/BGM.mp3"
-                      LoadedBehavior="Manual"
-                      Volume="0.5"
-                      MediaEnded="BackgroundMusic_MediaEnded" />
-
         <Image Source="/Assets/LoginPage.jpg"
                Stretch="UniformToFill" />
 
