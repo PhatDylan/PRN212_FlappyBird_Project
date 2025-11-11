@@ -150,13 +150,13 @@
                         Margin="0,0,16,0">
                     <Image Source="pack://application:,,,/Assets/SettingButton.png"
                            Stretch="Uniform"
-                           Margin="6"/>
+                           Margin="-46,-29,-46,-29"/>
                 </Border>
                 <StackPanel>
                     <TextBlock Text="Adjust pipe speed"
-                               FontSize="20"
+                               FontSize="30"
                                FontWeight="Bold"
-                               Foreground="#3B2F2F"/>
+                               Foreground="#3B2F2F" Height="52"/>
                 </StackPanel>
             </StackPanel>
             <Border Grid.Row="1"
