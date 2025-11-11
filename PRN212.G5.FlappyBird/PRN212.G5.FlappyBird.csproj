@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <Content Include="Assets\BGM.mp3">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\Fail.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

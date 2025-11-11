@@ -5,7 +5,8 @@
         Height="610"
         Width="1000"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Loaded="Window_Loaded">
 
     <Grid>
         <Image Source="/Assets/LoginPage.jpg"
