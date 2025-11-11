@@ -1,33 +1,53 @@
 using System;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace PRN212.G5.FlappyBird.Views
 {
     public partial class SettingsWindow : Window
     {
-        private const double DefaultSpeed = 5.0;
+        private const double DefaultPipeSpeed = 5.0;
+        private const double DefaultVolume = 50.0;
 
-        public double SelectedPipeSpeed { get; private set; } = DefaultSpeed;
+        public double SelectedPipeSpeed { get; private set; }
+        public double SelectedVolume { get; private set; }
 
-        public SettingsWindow(double currentSpeed)
+        public SettingsWindow(double initialPipeSpeed, double initialVolume = DefaultVolume)
         {
             InitializeComponent();
 
-            SelectedPipeSpeed = Math.Clamp(currentSpeed, PipeSpeedSlider.Minimum, PipeSpeedSlider.Maximum);
-            PipeSpeedSlider.Value = SelectedPipeSpeed;
-            UpdateDisplay(SelectedPipeSpeed);
+            // Thi?t l?p giá tr? ban ??u cho Pipe Speed
+            PipeSpeedSlider.Value = initialPipeSpeed;
+            PipeSpeedValueText.Text = initialPipeSpeed.ToString("F1");
+
+            // Thi?t l?p giá tr? ban ??u cho Volume (ch? hi?n th? s?, không có %)
+            VolumeSlider.Value = initialVolume;
+            VolumeValueText.Text = initialVolume.ToString("F0");
+
+            SelectedPipeSpeed = initialPipeSpeed;
+            SelectedVolume = initialVolume;
         }
 
         private void PipeSpeedSlider_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            double rounded = Math.Round(e.NewValue, 1);
-            UpdateDisplay(rounded);
+            if (PipeSpeedValueText != null)
+            {
+                PipeSpeedValueText.Text = e.NewValue.ToString("F1");
+            }
+        }
+
+        private void VolumeSlider_OnValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (VolumeValueText != null)
+            {
+                // Ch? hi?n th? s?, không có d?u %
+                VolumeValueText.Text = e.NewValue.ToString("F0");
+            }
         }
 
         private void DefaultButton_Click(object sender, RoutedEventArgs e)
         {
-            PipeSpeedSlider.Value = DefaultSpeed;
+            PipeSpeedSlider.Value = DefaultPipeSpeed;
+            VolumeSlider.Value = DefaultVolume;
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
@@ -38,18 +58,10 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void ApplyButton_Click(object sender, RoutedEventArgs e)
         {
-            SelectedPipeSpeed = Math.Round(PipeSpeedSlider.Value, 1);
+            SelectedPipeSpeed = PipeSpeedSlider.Value;
+            SelectedVolume = VolumeSlider.Value;
             DialogResult = true;
             Close();
         }
-
-        private void UpdateDisplay(double speed)
-        {
-            if (PipeSpeedValueText != null)
-            {
-                PipeSpeedValueText.Text = speed.ToString("0.0");
-            }
-        }
     }
 }
-
