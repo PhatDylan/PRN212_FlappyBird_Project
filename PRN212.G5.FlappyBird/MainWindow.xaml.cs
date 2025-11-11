@@ -71,6 +71,21 @@ namespace PRN212.G5.FlappyBird.Views
 
         private readonly List<PipePairState> pipePairs = new();
         private readonly List<Image> clouds = new();
+        
+        // NoTouch Obstacle State
+        private sealed class NoTouchState
+        {
+            public Image Image { get; set; } = null!;
+            public double BaseY { get; set; } // Vị trí Y gốc
+            public double CurrentY { get; set; } // Vị trí Y hiện tại
+            public bool IsOscillating { get; set; } // Có lên xuống không
+            public double OscillationAmplitude { get; set; } // Biên độ lên xuống
+            public double OscillationPhase { get; set; } // Phase cho sine wave
+            public double OscillationSpeed { get; set; } // Tốc độ oscillation
+            public double SpawnX { get; set; } // Vị trí X khi spawn để track
+        }
+        
+        private readonly List<NoTouchState> noTouchObstacles = new();
 
         private const double DefaultPipeSpeed = 5;
         private const double MinPipeSpeed = 3;
@@ -94,6 +109,7 @@ namespace PRN212.G5.FlappyBird.Views
         private const int PipeWidth = 80;
 
         private bool isTransitioning = false;
+        private int totalPipesPassed = 0; // Đếm tổng số pipes đã qua để spawn NoTouch
         private readonly MediaPlayer sfxJump = new();
         private readonly MediaPlayer sfxPoint = new();
         private readonly MediaPlayer sfxFail = new();
@@ -222,6 +238,9 @@ namespace PRN212.G5.FlappyBird.Views
             ClearDynamicObjects();
             CreateClouds();
             CreateInitialPipes(4);
+            
+            // Reset pipe counter
+            totalPipesPassed = 0;
 
             graceTicksRemaining = StartGraceTicks;
 
@@ -392,8 +411,14 @@ namespace PRN212.G5.FlappyBird.Views
                 GameCanvas.Children.Remove(pair.Bottom);
             }
             foreach (var cloud in clouds) GameCanvas.Children.Remove(cloud);
+            foreach (var state in noTouchObstacles) 
+            {
+                if (state.Image != null && GameCanvas.Children.Contains(state.Image))
+                    GameCanvas.Children.Remove(state.Image);
+            }
             pipePairs.Clear();
             clouds.Clear();
+            noTouchObstacles.Clear();
         }
 
         private void CreateClouds()
@@ -414,6 +439,62 @@ namespace PRN212.G5.FlappyBird.Views
                 Canvas.SetLeft(cloud, 200 + i * 250);
                 Canvas.SetTop(cloud, rnd.Next(20, 150));
                 clouds.Add(cloud);
+            }
+        }
+
+        private void SpawnNoTouchGroup(int count, double startX)
+        {
+            // Spawn một nhóm NoTouch sau pipes
+            for (int i = 0; i < count; i++)
+            {
+                try
+                {
+                    string imagePath = Pack("NoTouch.png");
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    
+                    var obstacle = new Image
+                    {
+                        Width = 60,
+                        Height = 60,
+                        Stretch = Stretch.Fill,
+                        Source = bitmap,
+                        SnapsToDevicePixels = true
+                    };
+                    
+                    RenderOptions.SetBitmapScalingMode(obstacle, BitmapScalingMode.HighQuality);
+                    GameCanvas.Children.Add(obstacle);
+                    
+                    // Spawn cách nhau 150px để tránh chồng lấn
+                    double spawnX = startX + (i * 150);
+                    double spawnY = rnd.Next(80, CanvasHeight - 120);
+                    
+                    Canvas.SetLeft(obstacle, spawnX);
+                    Canvas.SetTop(obstacle, spawnY);
+                    Panel.SetZIndex(obstacle, 15);
+                    
+                    // Tạo state với animation
+                    var state = new NoTouchState
+                    {
+                        Image = obstacle,
+                        BaseY = spawnY,
+                        CurrentY = spawnY,
+                        IsOscillating = rnd.NextDouble() < 0.6, // 60% có animation
+                        OscillationAmplitude = rnd.Next(25, 50), // Biên độ 25-50px
+                        OscillationPhase = rnd.NextDouble() * Math.PI * 2, // Random phase
+                        OscillationSpeed = 0.03 + rnd.NextDouble() * 0.02, // Tốc độ 0.03-0.05
+                        SpawnX = spawnX // Lưu vị trí spawn để track
+                    };
+                    
+                    noTouchObstacles.Add(state);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[NoTouch] ERROR: {ex.Message}");
+                }
             }
         }
 
@@ -828,6 +909,7 @@ namespace PRN212.G5.FlappyBird.Views
                 }
             }
 
+            // Xử lý pipes (luôn hiển thị, không ẩn)
             for (int i = 0; i < pipePairs.Count; i++)
             {
                 var pair = pipePairs[i];
@@ -846,15 +928,48 @@ namespace PRN212.G5.FlappyBird.Views
                         if (j != i)
                             farthestRight = Math.Max(farthestRight, Canvas.GetLeft(pipePairs[j].Top));
 
-                    double newX = farthestRight == double.MinValue ? FirstPipeStartLeft : farthestRight + PipeSpacing;
+                    // Tìm NoTouch xa nhất về bên phải để tạo khoảng trống
+                    double farthestNoTouchX = -1;
+                    foreach (var noTouchState in noTouchObstacles)
+                    {
+                        if (noTouchState.Image != null && GameCanvas.Children.Contains(noTouchState.Image))
+                        {
+                            double noTouchX = Canvas.GetLeft(noTouchState.Image);
+                            if (!double.IsNaN(noTouchX) && noTouchX > farthestNoTouchX)
+                                farthestNoTouchX = noTouchX;
+                        }
+                    }
+
+                    double newX;
+                    if (farthestNoTouchX > 0)
+                    {
+                        // Có NoTouch, đặt pipe cách NoTouch nửa màn hình (500px)
+                        newX = Math.Max(farthestNoTouchX + 500, farthestRight + PipeSpacing);
+                    }
+                    else
+                    {
+                        // Không có NoTouch, đặt bình thường
+                        newX = farthestRight == double.MinValue ? FirstPipeStartLeft : farthestRight + PipeSpacing;
+                    }
+
                     Canvas.SetLeft(top, newX);
                     Canvas.SetLeft(bottom, newX);
 
                     RandomizePipe(pair);
 
                     score++;
+                    totalPipesPassed++;
                     ScoreText.Text = $"Score: {score}";
                     PlaySfx(sfxPoint, "Point.mp3", 0.6);
+                    
+                    // Kiểm tra xem có cần spawn NoTouch không (cứ mỗi 10 pipes)
+                    // Score 10-14: 1 con, 15-19: 2 con, 20-24: 3 con...
+                    if (score >= 10 && totalPipesPassed % 10 == 0)
+                    {
+                        int noTouchCount = Math.Min(7, ((score - 10) / 5) + 1);
+                        // Spawn NoTouch ngay sau pipe vừa recycle
+                        SpawnNoTouchGroup(noTouchCount, newX + PipeSpacing);
+                    }
                 }
 
                 // TEST MODE: Comment collision detection để chim xuyên qua ống
@@ -865,6 +980,47 @@ namespace PRN212.G5.FlappyBird.Views
                 //     return;
                 // }
             }
+
+            // Xử lý NoTouch obstacles
+            for (int i = noTouchObstacles.Count - 1; i >= 0; i--)
+            {
+                if (i < 0 || i >= noTouchObstacles.Count) break;
+                var state = noTouchObstacles[i];
+                if (state == null || state.Image == null || !GameCanvas.Children.Contains(state.Image))
+                {
+                    if (i < noTouchObstacles.Count)
+                        noTouchObstacles.RemoveAt(i);
+                    continue;
+                }
+
+                double x = Canvas.GetLeft(state.Image);
+                if (double.IsNaN(x) || x < -100)
+                {
+                    if (GameCanvas.Children.Contains(state.Image))
+                        GameCanvas.Children.Remove(state.Image);
+                    noTouchObstacles.RemoveAt(i);
+                    continue;
+                }
+
+                // Di chuyển ngang
+                Canvas.SetLeft(state.Image, x - speed);
+
+                // Animation lên xuống (nếu có)
+                if (state.IsOscillating)
+                {
+                    state.OscillationPhase += state.OscillationSpeed;
+                    state.CurrentY = state.BaseY + Math.Sin(state.OscillationPhase) * state.OscillationAmplitude;
+                    Canvas.SetTop(state.Image, state.CurrentY);
+                }
+
+                // Kiểm tra collision
+                if (graceTicksRemaining <= 0 && FlappyBird.CollidesWith(state.Image))
+                {
+                    EndGame();
+                    return;
+                }
+            }
+
 
             double currentBirdTop = Canvas.GetTop(FlappyBird);
 
