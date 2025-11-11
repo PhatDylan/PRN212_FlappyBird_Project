@@ -24,11 +24,8 @@ namespace PRN212.G5.FlappyBird
             currentAccount = EnsureOfflineAccount();
         }
 
-
-
         public LoginWindow(Account account, double initialPipeSpeed) : this()
         {
-            currentAccount = account;
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
         }
 
