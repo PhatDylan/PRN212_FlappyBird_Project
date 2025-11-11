@@ -1,7 +1,8 @@
-﻿using System.Configuration;
-using System.Data;
+﻿using System;
 using System.Windows;
 using PRN212.G5.FlappyBird.Views;
+using FlappyBird.Data.Repositories;
+using FlappyBird.Business.Models;
 
 namespace PRN212.G5.FlappyBird
 {
@@ -14,37 +15,34 @@ namespace PRN212.G5.FlappyBird
         {
             base.OnStartup(e);
 
-            // Set ShutdownMode to OnExplicitShutdown so app doesn't close when login window closes
-            ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            const string offlineEmail = "offline@local";
+            var accountRepo = new AccountRepo();
+            var offlineAccount = accountRepo.GetAccountByEmail(offlineEmail);
 
-            // Show login window first
-            var loginWindow = new LoginWindow();
-            bool? dialogResult = loginWindow.ShowDialog();
-            
-            if (dialogResult == true && loginWindow.LoggedInAccount != null)
+            if (offlineAccount == null)
             {
-                try
+                offlineAccount = new Account
                 {
-                    // Open main window with logged in account
-                    var mainWindow = new MainWindow(loginWindow.LoggedInAccount);
-                    
-                    // Set as main window so app doesn't close when this window closes
-                    MainWindow = mainWindow;
-                    ShutdownMode = ShutdownMode.OnMainWindowClose;
-                    
-                    mainWindow.Show();
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Lỗi khi mở màn hình game: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-                    Shutdown();
-                }
+                    Email = offlineEmail,
+                    Password = Guid.NewGuid().ToString(),
+                    Name = "Player",
+                    Avatar = string.Empty,
+                    HighScore = 0
+                };
+
+                accountRepo.Register(offlineAccount);
+                offlineAccount = accountRepo.GetAccountByEmail(offlineEmail) ?? offlineAccount;
             }
-            else
+
+            ShutdownMode = ShutdownMode.OnMainWindowClose;
+
+            var mainWindow = new MainWindow(offlineAccount)
             {
-                // User closed login window without logging in
-                Shutdown();
-            }
+                Title = "Flappy Bird"
+            };
+
+            MainWindow = mainWindow;
+            mainWindow.Show();
         }
     }
 

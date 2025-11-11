@@ -4,17 +4,17 @@
 winexe
 C#
 .cs
-D:\PRN212\PRN212_FlappyBird_Project\PRN212.G5.FlappyBird\obj\Debug\net9.0-windows\
+D:\PRN212\FlappyBirdGame\FlappyBirdGame\PRN212.G5.FlappyBird\obj\Debug\net9.0-windows\
 PRN212.G5.FlappyBird
 none
 false
 TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
-D:\PRN212\PRN212_FlappyBird_Project\PRN212.G5.FlappyBird\App.xaml
-42058889574
+D:\PRN212\FlappyBirdGame\FlappyBirdGame\PRN212.G5.FlappyBird\App.xaml
+2-940597655
 
-7723817701
-202515188982
-MainWindow.xaml;Views\LoginWindow.xaml;Views\ProfileWindow.xaml;Views\RegisterWindow.xaml;
+5172307671
+2021479841576
+MainWindow.xaml;Views\SettingsWindow.xaml;
 
 False
 
