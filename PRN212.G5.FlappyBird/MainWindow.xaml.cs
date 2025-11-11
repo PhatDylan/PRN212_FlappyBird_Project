@@ -62,6 +62,10 @@ namespace PRN212.G5.FlappyBird.Views
         private const int PipeWidth = 80;
 
         private bool isTransitioning = false;
+        private readonly MediaPlayer bgmPlayer = new();
+        private readonly MediaPlayer sfxJump = new();
+        private readonly MediaPlayer sfxPoint = new();
+        private readonly MediaPlayer sfxFail = new();
 
         public MainWindow(double initialPipeSpeed)
         {
@@ -93,6 +97,38 @@ namespace PRN212.G5.FlappyBird.Views
         }
 
         private string Pack(string file) => $"pack://application:,,,/Assets/{file}";
+        private string AssetPath(string file) => System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", file);
+
+        private void PlayBgm()
+        {
+                bgmPlayer.Open(new Uri(AssetPath("BGM.mp3")));
+                bgmPlayer.Volume = 0.36;
+                bgmPlayer.MediaEnded -= Bgm_Loop;
+                bgmPlayer.MediaEnded += Bgm_Loop;
+                bgmPlayer.Position = TimeSpan.Zero;
+                bgmPlayer.Play();
+        }
+
+        private void Bgm_Loop(object? sender, EventArgs e)
+        {
+                bgmPlayer.Position = TimeSpan.Zero;
+                bgmPlayer.Play();
+        }
+
+        private void StopBgm()
+        {
+                bgmPlayer.MediaEnded -= Bgm_Loop;
+                bgmPlayer.Stop();
+        }
+
+        private void PlaySfx(MediaPlayer player, string file, double volume = 0.6)
+        {
+                player.Stop();
+                player.Open(new Uri(AssetPath(file)));
+                player.Volume = volume;
+                player.Position = TimeSpan.Zero;
+                player.Play();
+        }
 
         private void LoadAllBirdFrames()
         {
@@ -187,6 +223,7 @@ namespace PRN212.G5.FlappyBird.Views
             gameTimer.Start();
             birdAnimTimer.Start();
             dayNightTimer.Start();
+            PlayBgm();
         }
 
         private void ResetStageToDay(bool animate = false)
@@ -273,6 +310,7 @@ namespace PRN212.G5.FlappyBird.Views
 
             gameTimer.Stop();
             dayNightTimer.Stop();
+            StopBgm();
 
             if (score > highScore)
             {
@@ -287,6 +325,7 @@ namespace PRN212.G5.FlappyBird.Views
 
             isFallingAnimation = true;
             birdFrameIndex = 0;
+            PlaySfx(sfxFail, "Fail.mp3", 0.7);
         }
 
         private void SmoothToggleDayNight()
@@ -462,6 +501,7 @@ namespace PRN212.G5.FlappyBird.Views
 
                     score++;
                     ScoreText.Text = $"Score: {score}";
+                    PlaySfx(sfxPoint, "Point.mp3", 0.6);
                 }
 
                 if (graceTicksRemaining <= 0 &&
@@ -507,6 +547,7 @@ namespace PRN212.G5.FlappyBird.Views
             if (e.Key == Key.Space)
             {
                 birdSpeed = -10;
+                PlaySfx(sfxJump, "Jump.mp3", 0.5);
             }
             else if (e.Key == Key.N)
             {
@@ -540,6 +581,7 @@ namespace PRN212.G5.FlappyBird.Views
             gameTimer.Stop();
             birdAnimTimer.Stop();
             dayNightTimer.Stop();
+            StopBgm();
         }
     }
 

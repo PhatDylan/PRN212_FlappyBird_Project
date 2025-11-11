@@ -50,65 +50,122 @@
                        Visibility="Collapsed"/>
         </Canvas>
 
-        <!-- GAME OVER -->
+        <!-- GAME OVER (polished icon-style overlay) -->
         <Grid x:Name="GameOverPanel"
               Visibility="Collapsed"
               Panel.ZIndex="30"
               Background="#80000000">
-            <Border Width="420" Padding="24" CornerRadius="12"
-                    Background="#9BD3F3"
+            <Grid.Resources>
+                <!-- Circular button style -->
+                <Style x:Key="CircleButton" TargetType="Button">
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="Background" Value="#2E7D32"/>
+                    <Setter Property="BorderBrush" Value="#1B5E20"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                    <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                    <Setter Property="FontSize" Value="28"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="999"
+                                        Width="{TemplateBinding Width}"
+                                        Height="{TemplateBinding Height}">
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#388E3C"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter Property="Background" Value="#1B5E20"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Grid.Resources>
+            <Border Width="460" Padding="20" CornerRadius="16"
+                    Background="#CCF0FAFF"
                     HorizontalAlignment="Center"
-                    VerticalAlignment="Center">
+                    VerticalAlignment="Center"
+                    BorderBrush="#80FFFFFF" BorderThickness="1">
                 <StackPanel>
-                    <TextBlock Text="GAME OVER"
-                               FontSize="36"
-                               FontWeight="Black"
-                               Foreground="#1E5163"
-                               HorizontalAlignment="Center"/>
-                    <Rectangle Height="6" Fill="#E3A21A" Margin="0,12,0,24"/>
+                    <!-- Icon header -->
+                    <Grid Margin="0,4,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Border Width="56" Height="56" CornerRadius="28"
+                                    Background="#FFEF5350" BorderBrush="#FFE53935" BorderThickness="2"
+                                    Margin="0,0,12,0">
+                                <TextBlock Text="&#xE7E8;"
+                                           FontFamily="Segoe MDL2 Assets"
+                                           FontSize="28"
+                                           Foreground="White"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="GAME OVER"
+                                       FontSize="34"
+                                       FontWeight="Black"
+                                       Foreground="#0F2D3A"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
 
+                    <!-- Scores -->
                     <Grid Margin="0,0,0,8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="SCORE" FontSize="22" FontWeight="SemiBold" Foreground="#1E5163"/>
-                        <TextBlock x:Name="GoScoreValue" Grid.Column="1" Text="0" FontSize="22" FontWeight="Bold" Foreground="#1E5163"/>
+                        <TextBlock Text="SCORE" FontSize="22" FontWeight="SemiBold" Foreground="#0F2D3A"/>
+                        <TextBlock x:Name="GoScoreValue" Grid.Column="1" Text="0" FontSize="22" FontWeight="Bold" Foreground="#0F2D3A"/>
                     </Grid>
-
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="BEST SCORE" FontSize="22" FontWeight="SemiBold" Foreground="#1E5163"/>
-                        <TextBlock x:Name="GoBestScoreValue" Grid.Column="1" Text="0" FontSize="22" FontWeight="Bold" Foreground="#1E5163"/>
+                        <TextBlock Text="BEST SCORE" FontSize="22" FontWeight="SemiBold" Foreground="#0F2D3A"/>
+                        <TextBlock x:Name="GoBestScoreValue" Grid.Column="1" Text="0" FontSize="22" FontWeight="Bold" Foreground="#0F2D3A"/>
                     </Grid>
 
-                    <Rectangle Height="6" Fill="#E3A21A" Margin="0,24,0,16"/>
+                    <Separator Margin="0,16,0,12" Background="#33000000"/>
 
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition/>
-                            <ColumnDefinition/>
-                        </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0"
-                                Content="REPLAY"
-                                Width="160" Height="48"
-                                FontSize="20" FontWeight="SemiBold"
-                                Background="#3B8DAE" Foreground="White"
-                                BorderBrush="#1E5163" BorderThickness="2"
-                                Click="BtnReplay_Click"
-                                Margin="0,0,8,0"/>
-                        <Button Grid.Column="1"
-                                Content="LEFT"
-                                Width="160" Height="48"
-                                FontSize="20" FontWeight="SemiBold"
-                                Background="#D68F00" Foreground="White"
-                                BorderBrush="#845D00" BorderThickness="2"
-                                Click="BtnLeft_Click"
-                                Margin="8,0,0,0"/>
-                    </Grid>
+                    <!-- Icon buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <!-- Replay -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,0,24,0">
+                            <Button Style="{StaticResource CircleButton}"
+                                    Width="68" Height="68"
+                                    Background="#3B8DAE" BorderBrush="#1E5163"
+                                    Click="BtnReplay_Click"
+                                    ToolTip="Replay">
+                                <TextBlock Text="&#xE72C;" /> <!-- MDL2: Refresh/Replay -->
+                            </Button>
+                            <TextBlock Text="Replay" Foreground="#0F2D3A" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                        </StackPanel>
+
+                        <!-- Home/Left -->
+                        <StackPanel HorizontalAlignment="Center">
+                            <Button Style="{StaticResource CircleButton}"
+                                    Width="68" Height="68"
+                                    Background="#D68F00" BorderBrush="#845D00"
+                                    Click="BtnLeft_Click"
+                                    ToolTip="Main Menu">
+                                <TextBlock Text="&#xE80F;" /> <!-- MDL2: Home -->
+                            </Button>
+                            <TextBlock Text="Main menu" Foreground="#0F2D3A" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
                 </StackPanel>
             </Border>
         </Grid>
