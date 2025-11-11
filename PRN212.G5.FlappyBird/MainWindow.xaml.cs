@@ -110,6 +110,8 @@ namespace PRN212.G5.FlappyBird.Views
 
         private bool isTransitioning = false;
         private int totalPipesPassed = 0; // Đếm tổng số pipes đã qua để spawn NoTouch
+        private int nextNoTouchSpawnAt = -1; // Pipe số mấy sẽ spawn NoTouch tiếp theo (random)
+        private int lastSpawnedPhase = -1; // Phase cuối cùng đã spawn NoTouch để tránh spawn nhiều lần
         private readonly MediaPlayer sfxJump = new();
         private readonly MediaPlayer sfxPoint = new();
         private readonly MediaPlayer sfxFail = new();
@@ -239,8 +241,10 @@ namespace PRN212.G5.FlappyBird.Views
             CreateClouds();
             CreateInitialPipes(4);
             
-            // Reset pipe counter
+            // Reset pipe counter và random spawn point
             totalPipesPassed = 0;
+            nextNoTouchSpawnAt = -1;
+            lastSpawnedPhase = -1; // Reset phase tracking
 
             graceTicksRemaining = StartGraceTicks;
 
@@ -962,13 +966,36 @@ namespace PRN212.G5.FlappyBird.Views
                     ScoreText.Text = $"Score: {score}";
                     PlaySfx(sfxPoint, "Point.mp3", 0.6);
                     
-                    // Kiểm tra xem có cần spawn NoTouch không (cứ mỗi 10 pipes)
-                    // Score 10-14: 1 con, 15-19: 2 con, 20-24: 3 con...
-                    if (score >= 10 && totalPipesPassed % 10 == 0)
+                    // Kiểm tra xem có cần spawn NoTouch không
+                    // Phase 1 (pipes 1-10): không có NoTouch
+                    // Phase 2 (pipes 11-20): random 1 con trong khoảng này (chỉ 1 lần)
+                    // Phase 3 (pipes 21-30): random 2 con trong khoảng này (chỉ 1 lần)
+                    // Phase 4 (pipes 31-40): random 3 con trong khoảng này (chỉ 1 lần)
+                    // ... đến Phase 10 (pipes 91-100): random 9 con trong khoảng này (chỉ 1 lần)
+                    if (totalPipesPassed > 10)
                     {
-                        int noTouchCount = Math.Min(7, ((score - 10) / 5) + 1);
-                        // Spawn NoTouch ngay sau pipe vừa recycle
-                        SpawnNoTouchGroup(noTouchCount, newX + PipeSpacing);
+                        int currentPhase = (totalPipesPassed - 1) / 10; // Phase 1, 2, 3, ...
+                        int phaseStartPipe = currentPhase * 10 + 1; // Pipe bắt đầu phase (11, 21, 31...)
+                        int phaseEndPipe = (currentPhase + 1) * 10; // Pipe kết thúc phase (20, 30, 40...)
+                        int noTouchCount = Math.Min(9, currentPhase); // Số lượng NoTouch = phase (tối đa 9)
+                        
+                        // Chỉ random điểm spawn khi bắt đầu phase mới và chưa spawn trong phase này
+                        if (noTouchCount > 0 && currentPhase != lastSpawnedPhase && nextNoTouchSpawnAt == -1)
+                        {
+                            // Random một điểm trong phase hiện tại
+                            nextNoTouchSpawnAt = rnd.Next(phaseStartPipe, phaseEndPipe + 1);
+                        }
+                        
+                        // Kiểm tra xem đã đến điểm spawn chưa và chưa spawn trong phase này
+                        if (totalPipesPassed >= nextNoTouchSpawnAt && nextNoTouchSpawnAt > 0 && currentPhase != lastSpawnedPhase)
+                        {
+                            // Spawn NoTouch ngay sau pipe vừa recycle
+                            SpawnNoTouchGroup(noTouchCount, newX + PipeSpacing);
+                            
+                            // Đánh dấu đã spawn trong phase này
+                            lastSpawnedPhase = currentPhase;
+                            nextNoTouchSpawnAt = -1;
+                        }
                     }
                 }
 
