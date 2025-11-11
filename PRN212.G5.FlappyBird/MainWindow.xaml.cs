@@ -46,7 +46,7 @@ namespace PRN212.G5.FlappyBird.Views
 
         private double pipeSpeed = DefaultPipeSpeed;
         private double selectedPipeSpeed = DefaultPipeSpeed;
-        private const int gap = 190;
+        private const int gap = 150;
         private double cloudSpeed = 2;
 
         private bool isGameOver = false;
@@ -397,7 +397,9 @@ namespace PRN212.G5.FlappyBird.Views
                 Width = PipeWidth,
                 Stretch = Stretch.Fill,
                 Source = new BitmapImage(new Uri(Pack(pipeFile))),
-                SnapsToDevicePixels = true
+                SnapsToDevicePixels = true,
+                RenderTransformOrigin = new Point(0.5, 0.5),
+                RenderTransform = new ScaleTransform { ScaleY = -1 }
             };
             var bottom = new Image
             {
@@ -420,8 +422,9 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void RandomizePipe(Image top, Image bottom)
         {
-            int minTopHeight = 50;
-            int maxTopHeight = 590 - gap - 50;
+            int minTopHeight = 100;
+            int minBottomHeight = 100;
+            int maxTopHeight = 590 - gap - minBottomHeight;
             double topHeight = rnd.Next(minTopHeight, maxTopHeight + 1);
 
             top.Height = topHeight;
