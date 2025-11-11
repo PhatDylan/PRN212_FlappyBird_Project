@@ -252,6 +252,8 @@ namespace PRN212.G5.FlappyBird.Views
                 highScore = score;
                 accountRepo.UpdateHighScore(currentAccount.Email, highScore);
                 currentAccount.HighScore = highScore;
+                // Update high score display on canvas
+                if (HighScoreText != null) HighScoreText.Text = $"High Score: {highScore}";
             }
 
             GoScoreValue.Text = score.ToString();
