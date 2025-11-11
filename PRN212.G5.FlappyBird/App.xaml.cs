@@ -1,5 +1,4 @@
 using System.Windows;
-using PRN212.G5.FlappyBird.Views;
 
 namespace PRN212.G5.FlappyBird
 {
@@ -11,10 +10,10 @@ namespace PRN212.G5.FlappyBird
 
             ShutdownMode = ShutdownMode.OnMainWindowClose;
 
-            var loginWindow = new LoginWindow();
+            var startWindow = new LoginWindow();
 
-            MainWindow = loginWindow;
-            loginWindow.Show();
+            MainWindow = startWindow;
+            startWindow.Show();
         }
     }
 }
