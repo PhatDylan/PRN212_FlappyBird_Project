@@ -9,12 +9,78 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Assets\" />
+    <None Remove="Assets\birdfall-1.png" />
+    <None Remove="Assets\birdfall-2.png" />
+    <None Remove="Assets\birdfall-3.png" />
+    <None Remove="Assets\birdfly-1.png" />
+    <None Remove="Assets\birdfly-2.png" />
+    <None Remove="Assets\birdfly-3.png" />
+    <None Remove="Assets\Cloud-Day.png" />
+    <None Remove="Assets\Cloud-Night.png" />
+    <None Remove="Assets\DayStage.jpg" />
+    <None Remove="Assets\LoginPage.jpg" />
+    <None Remove="Assets\NightStage.jpg" />
+    <None Remove="Assets\Pipe-day.png" />
+    <None Remove="Assets\Pipe-night.png" />
+    <None Remove="Assets\PlayButton.png" />
+    <None Remove="Assets\SettingButton.png" />
+    <None Remove="Assets\SkinButton.png" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\FlappyBird.Business\FlappyBird.Business.csproj" />
     <ProjectReference Include="..\FlappyBird.Data\FlappyBird.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\birdfall-1.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\birdfall-2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\birdfall-3.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\birdfly-1.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\birdfly-2.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\birdfly-3.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Cloud-Day.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Cloud-Night.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\DayStage.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\LoginPage.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\NightStage.jpg">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Pipe-day.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\Pipe-night.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\PlayButton.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\SettingButton.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\SkinButton.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
 
 </Project>

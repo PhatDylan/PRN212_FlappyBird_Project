@@ -1,15 +1,13 @@
-﻿using FlappyBird.Business.Models;
+using FlappyBird.Business.Models;
 using FlappyBird.Data.Repositories;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Media;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 
 namespace PRN212.G5.FlappyBird.Views
@@ -17,166 +15,228 @@ namespace PRN212.G5.FlappyBird.Views
     public partial class MainWindow : Window
     {
         private readonly DispatcherTimer gameTimer = new();
-        private readonly GameRepo gameRepo = new();   // Dùng GameRepo để load/save điểm
+        private readonly DispatcherTimer birdAnimTimer = new();
+        private readonly DispatcherTimer dayNightTimer = new();
+
         private readonly AccountRepo accountRepo = new();
         private Account currentAccount;
 
+        // Bird frames
+        private BitmapImage[] dayBirdFlyFrames = Array.Empty<BitmapImage>();
+        private BitmapImage[] dayBirdFallFrames = Array.Empty<BitmapImage>();
+        private BitmapImage[] nightBirdFlyFrames = Array.Empty<BitmapImage>();
+        private BitmapImage[] nightBirdFallFrames = Array.Empty<BitmapImage>();
+
+        private BitmapImage[] currentFlyFrames = Array.Empty<BitmapImage>();
+        private BitmapImage[] currentFallFrames = Array.Empty<BitmapImage>();
+
+        private int birdFrameIndex = 0;
+        private bool isFallingAnimation = false;
+
+        // Game State
         private double birdSpeed = 0;
         private int score = 0;
         private int highScore = 0;
         private readonly Random rnd = new();
 
-        private readonly List<Rectangle> pipesTop = new();
-        private readonly List<Rectangle> pipesBottom = new();
-        private readonly List<Rectangle> clouds = new(); // danh sách đám mây
+        private readonly List<Image> pipesTop = new();
+        private readonly List<Image> pipesBottom = new();
+        private readonly List<Image> clouds = new();
 
-        private double pipeSpeed = 5; // tốc độ di chuyển ống
-        private const int gap = 190;  // khoảng cách giữa ống trên/dưới
-        private double cloudSpeed = 2; // tốc độ mây (chậm hơn pipe)
+        private const double DefaultPipeSpeed = 5;
+        private const double MinPipeSpeed = 3;
+        private const double MaxPipeSpeed = 10;
 
-        private SoundPlayer? jumpSound;
-        private SoundPlayer? hitSound;
+        private double pipeSpeed = DefaultPipeSpeed;
+        private double selectedPipeSpeed = DefaultPipeSpeed;
+        private const int gap = 190;
+        private double cloudSpeed = 2;
 
         private bool isGameOver = false;
         private bool isPlaying = false;
+        private bool isNight = false;
 
-        // Đẩy lứa ống đầu tiên ra xa + “grace period” sau khi bấm Play
-        private const double FirstPipeStartLeft = 1100; // vị trí ống đầu tiên (xa hơn để chim bay 1 đoạn)
-        private const double PipeSpacing = 320;         // khoảng cách giữa các cặp ống lúc khởi tạo & respawn
-        private const int StartGraceTicks = 60;         // ~1.2s nếu Interval = 20ms
+        private const double FirstPipeStartLeft = 1100;
+        private const double PipeSpacing = 320;
+        private const int StartGraceTicks = 60;
         private int graceTicksRemaining = 0;
 
-        // Kích thước sân chơi và ống
         private const int CanvasHeight = 500;
         private const int PipeWidth = 80;
+
+        private bool isTransitioning = false;
 
         public MainWindow(Account account)
         {
             InitializeComponent();
-            currentAccount = account;
-            this.KeyDown += Window_KeyDown;
 
-            //jumpSound = new SoundPlayer("jump.wav");
-            //hitSound  = new SoundPlayer("hit.wav");
+            currentAccount = account;
+
+            this.KeyDown += Window_KeyDown;
 
             gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             gameTimer.Tick += GameLoop;
 
-            // Update UI with account info
-            UserNameText.Text = currentAccount.Name;
-            Title = $"Flappy Bird - {currentAccount.Name}";
-            LoadUserAvatar();
+            birdAnimTimer.Interval = TimeSpan.FromMilliseconds(120);
+            birdAnimTimer.Tick += BirdAnimTick;
 
-            // Đảm bảo StartButton có event handler
+            dayNightTimer.Interval = TimeSpan.FromMinutes(0.50);
+            dayNightTimer.Tick += (_, __) => SmoothToggleDayNight();
+
+            Title = $"Flappy Bird - {currentAccount.Name}";
+
+            LoadAllBirdFrames();
+            UseBirdFramesForTheme(false);
+
             if (StartButton != null)
             {
-                StartButton.Click -= BtnStart_Click; // Remove để tránh duplicate
+                StartButton.Click -= BtnStart_Click;
                 StartButton.Click += BtnStart_Click;
             }
 
             ShowStartScreen();
         }
 
-        // =================== FLOW UI ===================
+        private string Pack(string file) => $"pack://application:,,,/Assets/{file}";
+
+        // ========= LOAD BIRD FRAMES =========
+        private void LoadAllBirdFrames()
+        {
+            // Day (v�ng)
+            dayBirdFlyFrames = new[]
+            {
+                LoadBitmapSafe("birdfly-1.png"),
+            };
+            dayBirdFallFrames = new[]
+            {
+                LoadBitmapSafe("birdfall-1.png"),
+            };
+
+            // Night (xanh)
+            nightBirdFlyFrames = new[]
+            {
+                LoadBitmapSafe("birdfly-3.png")
+            };
+            nightBirdFallFrames = new[]
+            {
+                LoadBitmapSafe("birdfall-3.png")
+            };
+
+            if (HasMissing(nightBirdFlyFrames) || HasMissing(nightBirdFallFrames))
+            {
+                nightBirdFlyFrames = dayBirdFlyFrames;
+                nightBirdFallFrames = dayBirdFallFrames;
+            }
+        }
+
+        private bool HasMissing(BitmapImage[] arr)
+        {
+            foreach (var b in arr)
+                if (b == null) return true;
+            return false;
+        }
+
+        private BitmapImage LoadBitmapSafe(string file)
+        {
+            try
+            {
+                return new BitmapImage(new Uri(Pack(file)));
+            }
+            catch
+            {
+                return null!;
+            }
+        }
+
+        private void UseBirdFramesForTheme(bool night)
+        {
+            currentFlyFrames = night ? nightBirdFlyFrames : dayBirdFlyFrames;
+            currentFallFrames = night ? nightBirdFallFrames : dayBirdFallFrames;
+
+            birdFrameIndex = 0;
+            isFallingAnimation = false;
+
+            if (currentFlyFrames.Length > 0 && currentFlyFrames[0] != null)
+                FlappyBird.Source = currentFlyFrames[0];
+        }
+
+        // ========= UI FLOW =========
         private void ShowStartScreen()
         {
             isPlaying = false;
             isGameOver = false;
-            gameTimer.Stop();
 
-            // Xóa toàn bộ vật thể động để về “trạng thái ban đầu”
+            gameTimer.Stop();
+            birdAnimTimer.Stop();
+            dayNightTimer.Stop();
+
             ClearDynamicObjects();
 
-            // Reset điểm và hiển thị
             score = 0;
             ScoreText.Text = "Score: 0";
-
-            // Ẩn điểm ở Start screen (nếu muốn hiện HighScore ở Start, để Visible ở đây)
             ScoreText.Visibility = Visibility.Collapsed;
             HighScoreText.Visibility = Visibility.Collapsed;
 
-            // Load và hiển thị high score từ account
             highScore = currentAccount.HighScore;
             HighScoreText.Text = $"High Score: {highScore}";
 
-            // Đưa chim về vị trí gốc và dừng rơi
-            Canvas.SetLeft(FlappyBird, 70);
-            Canvas.SetTop(FlappyBird, 247);
+            // ? CHIM ? V? TR� START (b�n ph?i logo)
+            Canvas.SetLeft(FlappyBird, 700);
+            Canvas.SetTop(FlappyBird, 120);
+            Panel.SetZIndex(FlappyBird, 10);
             birdSpeed = 0;
 
-            // Hiển thị StartPanel, ẩn GameOverPanel
-            if (StartPanel != null) StartPanel.Visibility = Visibility.Visible;
-            if (StartPanelUI != null) StartPanelUI.Visibility = Visibility.Visible;
-            if (GameOverPanel != null) GameOverPanel.Visibility = Visibility.Collapsed;
+            StartPanel.Visibility = Visibility.Visible;
+            StartPanelUI.Visibility = Visibility.Visible;
+            GameOverPanel.Visibility = Visibility.Collapsed;
+
+            // ? HI?N TH? LOGINPAGE, ?N DAY/NIGHT
+            ForceResetToLoginPage();
+
+            // Cho chim v? c�nh
+            isFallingAnimation = false;
+            birdFrameIndex = 0;
+            UseBirdFramesForTheme(false);
+            birdAnimTimer.Start();
         }
 
         private void StartGame()
         {
-            try
-            {
-                isGameOver = false;
-                isPlaying = true;
+            isGameOver = false;
+            isPlaying = true;
 
-                // Ẩn StartPanel và StartPanelUI
-                if (StartPanel != null)
-                {
-                    StartPanel.Visibility = Visibility.Collapsed;
-                    StartPanel.IsHitTestVisible = false;
-                }
-                if (StartPanelUI != null)
-                {
-                    StartPanelUI.Visibility = Visibility.Collapsed;
-                }
-                
-                // Đảm bảo GameCanvas có thể nhận input
-                if (GameCanvas != null)
-                {
-                    GameCanvas.Focusable = true;
-                    GameCanvas.Focus();
-                }
-                
-                if (GameOverPanel != null)
-                {
-                    GameOverPanel.Visibility = Visibility.Collapsed;
-                }
+            StartPanel.Visibility = Visibility.Collapsed;
+            StartPanel.IsHitTestVisible = false;
+            StartPanelUI.Visibility = Visibility.Collapsed;
+            GameOverPanel.Visibility = Visibility.Collapsed;
 
-                // Hiện điểm khi người dùng bấm Play
-                if (ScoreText != null) ScoreText.Visibility = Visibility.Visible;
-                if (HighScoreText != null) HighScoreText.Visibility = Visibility.Visible;
+            ScoreText.Visibility = Visibility.Visible;
+            HighScoreText.Visibility = Visibility.Visible;
 
-                // Reset state
-                if (FlappyBird != null)
-                {
-                    Canvas.SetLeft(FlappyBird, 70);
-                    Canvas.SetTop(FlappyBird, 247);
-                }
-                birdSpeed = 0;
-                score = 0;
-                pipeSpeed = 5;
-                if (ScoreText != null) ScoreText.Text = "Score: 0";
+            // ⭐ ĐƯA CHIM VỀ VỊ TRÍ CHƠI
+            Canvas.SetLeft(FlappyBird, 70);
+            Canvas.SetTop(FlappyBird, 247);
+            Panel.SetZIndex(FlappyBird, 5);
+            birdSpeed = 0;
+            score = 0;
+            pipeSpeed = selectedPipeSpeed;
+            ScoreText.Text = "Score: 0";
 
-                // High score từ account
-                highScore = currentAccount.HighScore;
-                if (HighScoreText != null) HighScoreText.Text = $"High Score: {highScore}";
+            highScore = currentAccount.HighScore;
+            HighScoreText.Text = $"High Score: {highScore}";
 
-                // Clear old objects & tạo lại
-                ClearDynamicObjects();
-                CreateClouds();
-                CreateInitialPipes(count: 4);
+            ClearDynamicObjects();
+            CreateClouds();
+            CreateInitialPipes(4);
 
-                // Bật "grace period": tạm bỏ qua va chạm một lúc sau khi Play
-                graceTicksRemaining = StartGraceTicks;
+            graceTicksRemaining = StartGraceTicks;
 
-                // Start game timer
-                if (gameTimer != null)
-                {
-                    gameTimer.Start();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi bắt đầu game: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            // ? FADE LoginPage ? DayStage
+            FadeFromLoginToDay();
+
+            gameTimer.Start();
+            birdAnimTimer.Start();
+            dayNightTimer.Start();
         }
 
         private void EndGame()
@@ -186,32 +246,126 @@ namespace PRN212.G5.FlappyBird.Views
             isPlaying = false;
 
             gameTimer.Stop();
-            //hitSound?.Play();
+            dayNightTimer.Stop();
 
-            // Cập nhật high score vào account
             if (score > highScore)
             {
                 highScore = score;
                 accountRepo.UpdateHighScore(currentAccount.Email, highScore);
-                // Update local account object
                 currentAccount.HighScore = highScore;
                 // Update high score display on canvas
                 if (HighScoreText != null) HighScoreText.Text = $"High Score: {highScore}";
             }
 
-            // Hiển thị overlay Game Over
             GoScoreValue.Text = score.ToString();
             GoBestScoreValue.Text = highScore.ToString();
             GameOverPanel.Visibility = Visibility.Visible;
+
+            isFallingAnimation = true;
+            birdFrameIndex = 0;
         }
 
-        // =================== BUILD SCENE ===================
+        // ========= LOGINPAGE / DAY MANAGEMENT =========
+        private void ForceResetToLoginPage()
+        {
+            isNight = false;
+            isTransitioning = false;
+
+            // D?ng m?i animation
+            if (LoginLayer != null) LoginLayer.BeginAnimation(UIElement.OpacityProperty, null);
+            DayLayer.BeginAnimation(UIElement.OpacityProperty, null);
+            NightLayer.BeginAnimation(UIElement.OpacityProperty, null);
+
+            // ? HI?N TH? LOGINPAGE, ?N DAY/NIGHT
+            if (LoginLayer != null) LoginLayer.Opacity = 1;
+            DayLayer.Opacity = 0;
+            NightLayer.Opacity = 0;
+
+            UseBirdFramesForTheme(false);
+        }
+
+        private void FadeFromLoginToDay()
+        {
+            var dur = TimeSpan.FromSeconds(0.6);
+
+            // LoginPage fade out
+            var loginFadeOut = new DoubleAnimation
+            {
+                To = 0,
+                Duration = dur,
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            // DayLayer fade in
+            var dayFadeIn = new DoubleAnimation
+            {
+                To = 1,
+                Duration = dur,
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            if (LoginLayer != null)
+                LoginLayer.BeginAnimation(UIElement.OpacityProperty, loginFadeOut);
+            DayLayer.BeginAnimation(UIElement.OpacityProperty, dayFadeIn);
+
+            isNight = false;
+        }
+
+        // ========= SMOOTH DAY/NIGHT TRANSITION =========
+        private void SmoothToggleDayNight()
+        {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            bool targetNight = !isNight;
+            var dur = TimeSpan.FromSeconds(0.8);
+
+            var dayAnim = new DoubleAnimation
+            {
+                To = targetNight ? 0 : 1,
+                Duration = dur,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            var nightAnim = new DoubleAnimation
+            {
+                To = targetNight ? 1 : 0,
+                Duration = dur,
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            dayAnim.Completed += (_, __) =>
+            {
+                isTransitioning = false;
+                isNight = targetNight;
+
+                UpdateDynamicAssets(targetNight);
+                UseBirdFramesForTheme(targetNight);
+            };
+
+            DayLayer.BeginAnimation(UIElement.OpacityProperty, dayAnim);
+            NightLayer.BeginAnimation(UIElement.OpacityProperty, nightAnim);
+        }
+
+        private void UpdateDynamicAssets(bool night)
+        {
+            string pipeFile = night ? "Pipe-night.png" : "Pipe-day.png";
+            string cloudFile = night ? "Cloud-Night.png" : "Cloud-Day.png";
+
+            foreach (var p in pipesTop)
+                p.Source = new BitmapImage(new Uri(Pack(pipeFile)));
+            foreach (var p in pipesBottom)
+                p.Source = new BitmapImage(new Uri(Pack(pipeFile)));
+            foreach (var c in clouds)
+                c.Source = new BitmapImage(new Uri(Pack(cloudFile)));
+        }
+
+        // ========= BUILD SCENE =========
         private void ClearDynamicObjects()
         {
             foreach (var p in pipesTop) GameCanvas.Children.Remove(p);
             foreach (var p in pipesBottom) GameCanvas.Children.Remove(p);
             foreach (var c in clouds) GameCanvas.Children.Remove(c);
-
             pipesTop.Clear();
             pipesBottom.Clear();
             clouds.Clear();
@@ -219,16 +373,17 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void CreateClouds()
         {
+            string cloudFile = isNight ? "Cloud-Night.png" : "Cloud-Day.png";
             for (int i = 0; i < 4; i++)
             {
-                Rectangle cloud = new()
+                var cloud = new Image
                 {
-                    Width = rnd.Next(80, 150),
-                    Height = rnd.Next(30, 60),
-                    Fill = Brushes.White,
-                    RadiusX = 20,
-                    RadiusY = 20,
-                    Opacity = 0.8
+                    Width = rnd.Next(110, 180),
+                    Height = rnd.Next(50, 90),
+                    Source = new BitmapImage(new Uri(Pack(cloudFile))),
+                    Stretch = Stretch.Fill,
+                    Opacity = 0.9,
+                    SnapsToDevicePixels = true
                 };
                 GameCanvas.Children.Add(cloud);
                 Canvas.SetLeft(cloud, 200 + i * 250);
@@ -240,20 +395,30 @@ namespace PRN212.G5.FlappyBird.Views
         private void CreateInitialPipes(int count)
         {
             for (int i = 0; i < count; i++)
-            {
-                double leftPos = FirstPipeStartLeft + i * PipeSpacing;
-                CreatePipePair(leftPos);
-            }
+                CreatePipePair(FirstPipeStartLeft + i * PipeSpacing);
         }
 
         private void CreatePipePair(double leftPos)
         {
-            var top = new Rectangle { Width = PipeWidth, Fill = Brushes.Green };
-            var bottom = new Rectangle { Width = PipeWidth, Fill = Brushes.Green };
+            string pipeFile = isNight ? "Pipe-night.png" : "Pipe-day.png";
+
+            var top = new Image
+            {
+                Width = PipeWidth,
+                Stretch = Stretch.Fill,
+                Source = new BitmapImage(new Uri(Pack(pipeFile))),
+                SnapsToDevicePixels = true
+            };
+            var bottom = new Image
+            {
+                Width = PipeWidth,
+                Stretch = Stretch.Fill,
+                Source = new BitmapImage(new Uri(Pack(pipeFile))),
+                SnapsToDevicePixels = true
+            };
 
             GameCanvas.Children.Add(top);
             GameCanvas.Children.Add(bottom);
-
             Canvas.SetLeft(top, leftPos);
             Canvas.SetLeft(bottom, leftPos);
 
@@ -263,34 +428,35 @@ namespace PRN212.G5.FlappyBird.Views
             pipesBottom.Add(bottom);
         }
 
-        private void RandomizePipe(Rectangle top, Rectangle bottom)
+        private void RandomizePipe(Image top, Image bottom)
         {
-            // Random 1 lần khi tạo/respawn; KHÔNG dao động theo thời gian
-            int minTop = 50;
-            int maxTop = CanvasHeight - gap - 50; // để bottom >= 50
-            double topHeight = rnd.Next(minTop, maxTop + 1);
+            int minTopHeight = 50;
+            int maxTopHeight = 590 - gap - 50;
+            double topHeight = rnd.Next(minTopHeight, maxTopHeight + 1);
 
             top.Height = topHeight;
-            bottom.Height = CanvasHeight - topHeight - gap;
-
             Canvas.SetTop(top, 0);
-            Canvas.SetTop(bottom, top.Height + gap);
+
+            double bottomTop = topHeight + gap;
+            bottom.Height = 590 - bottomTop;
+            Canvas.SetTop(bottom, bottomTop);
+
+            Panel.SetZIndex(top, 3);
+            Panel.SetZIndex(bottom, 3);
         }
 
-        // =================== GAME LOOP ===================
+        // ========= GAME LOOP =========
         private void GameLoop(object? sender, EventArgs e)
         {
             if (!isPlaying || isGameOver) return;
 
             double birdTop = Canvas.GetTop(FlappyBird);
             Canvas.SetTop(FlappyBird, birdTop + birdSpeed);
-            birdSpeed += 1; // trọng lực
+            birdSpeed += 1;
 
             double speed = pipeSpeed + score * 0.1;
-
             if (graceTicksRemaining > 0) graceTicksRemaining--;
 
-            // Clouds
             foreach (var c in clouds)
             {
                 Canvas.SetLeft(c, Canvas.GetLeft(c) - cloudSpeed);
@@ -301,38 +467,28 @@ namespace PRN212.G5.FlappyBird.Views
                 }
             }
 
-            // Pipes
             for (int i = 0; i < pipesTop.Count; i++)
             {
-                // Dịch trái đều
                 Canvas.SetLeft(pipesTop[i], Canvas.GetLeft(pipesTop[i]) - speed);
                 Canvas.SetLeft(pipesBottom[i], Canvas.GetLeft(pipesBottom[i]) - speed);
 
-                // Khi ống đi ra khỏi màn hình, respawn ở farthestRight + spacing để khoảng cách đều
                 if (Canvas.GetLeft(pipesTop[i]) < -PipeWidth)
                 {
                     double farthestRight = double.MinValue;
                     for (int j = 0; j < pipesTop.Count; j++)
-                    {
-                        if (j == i) continue;
-                        farthestRight = Math.Max(farthestRight, Canvas.GetLeft(pipesTop[j]));
-                    }
-                    double newX = (farthestRight == double.MinValue)
-                        ? FirstPipeStartLeft
-                        : farthestRight + PipeSpacing;
+                        if (j != i)
+                            farthestRight = Math.Max(farthestRight, Canvas.GetLeft(pipesTop[j]));
 
+                    double newX = farthestRight == double.MinValue ? FirstPipeStartLeft : farthestRight + PipeSpacing;
                     Canvas.SetLeft(pipesTop[i], newX);
                     Canvas.SetLeft(pipesBottom[i], newX);
 
-                    // Random lại vertical 1 lần khi respawn (KHÔNG dao động)
                     RandomizePipe(pipesTop[i], pipesBottom[i]);
 
-                    // Cộng điểm
                     score++;
                     ScoreText.Text = $"Score: {score}";
                 }
 
-                // Kiểm tra va chạm (bỏ qua khi còn grace period)
                 if (graceTicksRemaining <= 0 &&
                     (FlappyBird.CollidesWith(pipesTop[i]) || FlappyBird.CollidesWith(pipesBottom[i])))
                 {
@@ -341,28 +497,49 @@ namespace PRN212.G5.FlappyBird.Views
                 }
             }
 
-            // Chim rơi khỏi canvas hoặc chạm trần (bỏ qua khi còn grace period)
-            if (graceTicksRemaining <= 0 &&
-                (birdTop < 0 || birdTop + FlappyBird.Height > CanvasHeight))
+            // Gi?i h?n chim kh�ng gi?t
+            double currentBirdTop = Canvas.GetTop(FlappyBird);
+
+            if (currentBirdTop < 0)
             {
-                EndGame();
+                Canvas.SetTop(FlappyBird, 0);
+                birdSpeed = 0;
+            }
+
+            double groundLevel = 500 - FlappyBird.Height;
+            if (currentBirdTop > groundLevel)
+            {
+                Canvas.SetTop(FlappyBird, groundLevel);
+                birdSpeed = 0;
             }
         }
 
-        // =================== INPUT ===================
+        private void BirdAnimTick(object? sender, EventArgs e)
+        {
+            var frames = isFallingAnimation ? currentFallFrames : currentFlyFrames;
+
+            if (frames == null || frames.Length == 0) return;
+
+            birdFrameIndex = (birdFrameIndex + 1) % frames.Length;
+
+            if (frames[birdFrameIndex] != null)
+                FlappyBird.Source = frames[birdFrameIndex];
+        }
+
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
-            // Chỉ cho nhảy khi đang chơi
             if (!isPlaying || isGameOver) return;
 
             if (e.Key == Key.Space)
             {
                 birdSpeed = -10;
-                jumpSound?.Play();
+            }
+            else if (e.Key == Key.N)
+            {
+                SmoothToggleDayNight();
             }
         }
 
-        // =================== BUTTONS ===================
         private void BtnStart_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -371,121 +548,87 @@ namespace PRN212.G5.FlappyBird.Views
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error in BtnStart_Click: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-        private void BtnReplay_Click(object sender, RoutedEventArgs e) => StartGame();
-        private void BtnLeft_Click(object sender, RoutedEventArgs e) => ShowStartScreen();
-
-        private void ProfileButton_Click(object sender, RoutedEventArgs e)
-        {
-            var profileWindow = new ProfileWindow(currentAccount);
-            if (profileWindow.ShowDialog() == true && profileWindow.UpdatedAccount != null)
-            {
-                // Update account info
-                currentAccount = profileWindow.UpdatedAccount;
-                UserNameText.Text = currentAccount.Name;
-                Title = $"Flappy Bird - {currentAccount.Name}";
-                
-                // Refresh avatar
-                LoadUserAvatar();
-                
-                // Refresh high score display
-                highScore = currentAccount.HighScore;
-                HighScoreText.Text = $"High Score: {highScore}";
+                MessageBox.Show($"Error: {ex.Message}", "Error",
+                                MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void LeaderboardButton_Click(object sender, RoutedEventArgs e)
+        // ??? REPLAY: CHOI L?I LU�N KH�NG V? LOGINPAGE ???
+        private void BtnReplay_Click(object sender, RoutedEventArgs e)
         {
-            var leaderboardWindow = new LeaderboardWindow(currentAccount);
-            leaderboardWindow.ShowDialog();
+            birdAnimTimer.Stop();
+            GameOverPanel.Visibility = Visibility.Collapsed;
+
+            // ? N?u dang ? Night, fade nhanh v? Day
+            if (isNight)
+            {
+                var dur = TimeSpan.FromSeconds(0.3);
+                var dayAnim = new DoubleAnimation
+                {
+                    To = 1,
+                    Duration = dur,
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+                var nightAnim = new DoubleAnimation
+                {
+                    To = 0,
+                    Duration = dur,
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+
+                dayAnim.Completed += (s, ev) =>
+                {
+                    isNight = false;
+                    UpdateDynamicAssets(false);
+                    UseBirdFramesForTheme(false);
+                };
+
+                DayLayer.BeginAnimation(UIElement.OpacityProperty, dayAnim);
+                NightLayer.BeginAnimation(UIElement.OpacityProperty, nightAnim);
+            }
+
+            // ? ?n LoginLayer n?u dang hi?n th?
+            if (LoginLayer != null && LoginLayer.Opacity > 0)
+            {
+                LoginLayer.BeginAnimation(UIElement.OpacityProperty, null);
+                LoginLayer.Opacity = 0;
+            }
+
+            // B?t d?u l?i game
+            StartGame();
         }
 
-        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        private void BtnLeft_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("Bạn có chắc chắn muốn đăng xuất?", "Xác nhận", 
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-            
-            if (result == MessageBoxResult.Yes)
+            birdAnimTimer.Stop();
+            ShowStartScreen();
+        }
+
+        private void BtnSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var settingsWindow = new SettingsWindow(selectedPipeSpeed)
             {
-                // Stop game if playing
-                if (isPlaying || isGameOver)
-                {
-                    gameTimer.Stop();
-                    isPlaying = false;
-                    isGameOver = false;
-                    ClearDynamicObjects();
-                }
-                
-                // Hide current game window
-                this.Hide();
-                
-                // Show login window
-                var loginWindow = new LoginWindow();
-                if (loginWindow.ShowDialog() == true && loginWindow.LoggedInAccount != null)
-                {
-                    // Update account and restart game
-                    currentAccount = loginWindow.LoggedInAccount;
-                    UserNameText.Text = currentAccount.Name;
-                    Title = $"Flappy Bird - {currentAccount.Name}";
-                    LoadUserAvatar();
-                    highScore = currentAccount.HighScore;
-                    HighScoreText.Text = $"High Score: {highScore}";
-                    
-                    // Reset game state
-                    score = 0;
-                    ScoreText.Text = "Score: 0";
-                    ShowStartScreen();
-                    
-                    // Show window again
-                    this.Show();
-                }
-                else
-                {
-                    // User closed login - close app
-                    this.Close();
-                    Application.Current.Shutdown();
-                }
+                Owner = this
+            };
+
+            if (settingsWindow.ShowDialog() == true)
+            {
+                double newSpeed = Math.Clamp(settingsWindow.SelectedPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
+                selectedPipeSpeed = newSpeed;
+                pipeSpeed = newSpeed;
             }
         }
 
-        private void LoadUserAvatar()
+        private void BtnSkins_Click(object sender, RoutedEventArgs e)
         {
-            try
-            {
-                if (!string.IsNullOrEmpty(currentAccount.Avatar))
-                {
-                    byte[] imageBytes = Convert.FromBase64String(currentAccount.Avatar);
-                    BitmapImage bitmap = new BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.StreamSource = new MemoryStream(imageBytes);
-                    bitmap.DecodePixelWidth = 64;
-                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-
-                    UserAvatarImage.Source = bitmap;
-                    DefaultAvatarText.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    UserAvatarImage.Source = null;
-                    DefaultAvatarText.Visibility = Visibility.Visible;
-                }
-            }
-            catch
-            {
-                UserAvatarImage.Source = null;
-                DefaultAvatarText.Visibility = Visibility.Visible;
-            }
+            MessageBox.Show("Skins clicked (TODO).", "Skins",
+                MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 
-    // Collision helper
     public static class CollisionExtensions
     {
-        public static bool CollidesWith(this Rectangle a, Rectangle b)
+        public static bool CollidesWith(this FrameworkElement a, FrameworkElement b)
         {
             if (a == null || b == null) return false;
 
@@ -494,10 +637,17 @@ namespace PRN212.G5.FlappyBird.Views
             double bLeft = Canvas.GetLeft(b);
             double bTop = Canvas.GetTop(b);
 
-            Rect rectA = new(aLeft, aTop, a.Width, a.Height);
-            Rect rectB = new(bLeft, bTop, b.Width, b.Height);
+            double aWidth = double.IsNaN(a.Width) ? a.ActualWidth : a.Width;
+            double aHeight = double.IsNaN(a.Height) ? a.ActualHeight : a.Height;
+            double bWidth = double.IsNaN(b.Width) ? b.ActualWidth : b.Width;
+            double bHeight = double.IsNaN(b.Height) ? b.ActualHeight : b.Height;
+
+            Rect rectA = new(aLeft, aTop, Math.Max(1, aWidth), Math.Max(1, aHeight));
+            Rect rectB = new(bLeft, bTop, Math.Max(1, bWidth), Math.Max(1, bHeight));
 
             return rectA.IntersectsWith(rectB);
         }
     }
 }
+
+
