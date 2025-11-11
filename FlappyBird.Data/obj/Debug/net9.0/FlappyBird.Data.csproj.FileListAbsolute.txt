@@ -1,15 +1,3 @@
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Data.deps.json
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Data.dll
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Data.pdb
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.GeneratedMSBuildEditorConfig.editorconfig
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.AssemblyInfoInputs.cache
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.AssemblyInfo.cs
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.csproj.CoreCompileInputs.cache
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.dll
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\refint\FlappyBird.Data.dll
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.pdb
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\ref\FlappyBird.Data.dll
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.sourcelink.json
 D:\PRN212\PRN212_FlappyBird_Project\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Data.deps.json
 D:\PRN212\PRN212_FlappyBird_Project\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Data.dll
 D:\PRN212\PRN212_FlappyBird_Project\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Data.pdb
@@ -26,7 +14,3 @@ D:\PRN212\PRN212_FlappyBird_Project\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.
 D:\PRN212\PRN212_FlappyBird_Project\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Business.pdb
 D:\PRN212\PRN212_FlappyBird_Project\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.csproj.AssemblyReference.cache
 D:\PRN212\PRN212_FlappyBird_Project\FlappyBird.Data\obj\Debug\net9.0\FlappyBi.4781F9A4.Up2Date
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Business.dll
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\bin\Debug\net9.0\FlappyBird.Business.pdb
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBird.Data.csproj.AssemblyReference.cache
-D:\PRN212-FPT\25.1.SE1815\Project\FlappyBirdGame\FlappyBird.Data\obj\Debug\net9.0\FlappyBi.4781F9A4.Up2Date
