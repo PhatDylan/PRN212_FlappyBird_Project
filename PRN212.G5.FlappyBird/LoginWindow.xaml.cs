@@ -24,8 +24,6 @@ namespace PRN212.G5.FlappyBird
 
             // Khởi tạo MediaPlayer
             InitializeMediaPlayer();
-
-            Loaded += LoginWindow_Loaded;
         }
 
         private void InitializeMediaPlayer()
@@ -45,7 +43,7 @@ namespace PRN212.G5.FlappyBird
             }
         }
 
-        private void LoginWindow_Loaded(object sender, RoutedEventArgs e)
+        private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             if (mediaPlayer != null)
             {
@@ -114,11 +112,6 @@ namespace PRN212.G5.FlappyBird
                 mediaPlayer = null;
             }
             base.OnClosed(e);
-        }
-
-        private void Window_Loaded(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }
