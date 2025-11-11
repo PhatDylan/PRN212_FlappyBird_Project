@@ -15,7 +15,7 @@ namespace PRN212.G5.FlappyBird
         private double selectedPipeSpeed = DefaultPipeSpeed;
         private double musicVolume = 50;
 
-        private MediaPlayer mediaPlayer; // Dùng MediaPlayer thay vì MediaElement
+        private MediaPlayer mediaPlayer; 
 
         public LoginWindow(double initialPipeSpeed = DefaultPipeSpeed)
         {
