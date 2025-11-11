@@ -23,10 +23,7 @@ namespace PRN212.G5.FlappyBird
             {
                 offlineAccount = new Account
                 {
-                    Email = offlineEmail,
-                    Password = Guid.NewGuid().ToString(),
                     Name = "Player",
-                    Avatar = string.Empty,
                     HighScore = 0
                 };
 
