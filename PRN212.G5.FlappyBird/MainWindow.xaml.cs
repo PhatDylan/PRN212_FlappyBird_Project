@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.IO;
 
@@ -91,7 +92,16 @@ namespace PRN212.G5.FlappyBird.Views
             public double SpawnX { get; set; } // Vị trí X khi spawn để track
         }
         
+        // Gate State - Cổng để chuyển đổi ngày/đêm
+        private sealed class GateState
+        {
+            public Ellipse Gate { get; set; } = null!;
+            public double SpawnX { get; set; }
+            public bool IsActivated { get; set; } = false; // Đã kích hoạt chưa
+        }
+        
         private readonly List<NoTouchState> noTouchObstacles = new();
+        private readonly List<GateState> gates = new();
 
         private const double DefaultPipeSpeed = 5;
         private const double MinPipeSpeed = 3;
@@ -105,6 +115,7 @@ namespace PRN212.G5.FlappyBird.Views
         private bool isGameOver = false;
         private bool isPlaying = false;
         private bool isNight = false;
+        private int frameCount = 0; // Đếm frame để tối ưu collision detection
 
         private const double FirstPipeStartLeft = 1100;
         private const double PipeSpacing = 260;
@@ -118,6 +129,7 @@ namespace PRN212.G5.FlappyBird.Views
         private int totalPipesPassed = 0; // Đếm tổng số pipes đã qua để spawn NoTouch
         private int nextNoTouchSpawnAt = -1; // Pipe số mấy sẽ spawn NoTouch tiếp theo (random)
         private int lastSpawnedPhase = -1; // Phase cuối cùng đã spawn NoTouch để tránh spawn nhiều lần
+        private int noTouchSpawnCount = 0; // Đếm số lần đã spawn NoTouch (để tạo cổng sau mỗi 2 lần)
         private readonly MediaPlayer sfxJump = new();
         private readonly MediaPlayer sfxPoint = new();
         private readonly MediaPlayer sfxFail = new();
@@ -135,8 +147,9 @@ namespace PRN212.G5.FlappyBird.Views
             birdAnimTimer.Interval = TimeSpan.FromMilliseconds(120);
             birdAnimTimer.Tick += BirdAnimTick;
 
-            dayNightTimer.Interval = TimeSpan.FromMinutes(0.50);
-            dayNightTimer.Tick += (_, __) => SmoothToggleDayNight();
+            // Tắt timer tự động chuyển đổi ngày/đêm, chỉ chuyển khi vào cổng
+            // dayNightTimer.Interval = TimeSpan.FromMinutes(0.50);
+            // dayNightTimer.Tick += (_, __) => SmoothToggleDayNight();
 
             highScore = LoadHighScore();
             Title = $"Flappy Bird - {playerName}";
@@ -252,6 +265,7 @@ namespace PRN212.G5.FlappyBird.Views
             nextNoTouchSpawnAt = -1;
             lastSpawnedPhase = -1; // Reset phase tracking
             nextGroupId = 0; // Reset group ID
+            noTouchSpawnCount = 0; // Reset NoTouch spawn counter
 
             graceTicksRemaining = StartGraceTicks;
 
@@ -371,27 +385,53 @@ namespace PRN212.G5.FlappyBird.Views
             isTransitioning = true;
 
             bool targetNight = !isNight;
-            var dur = TimeSpan.FromSeconds(0.8);
+            // Tăng duration lên 2.5 giây để chuyển đổi mượt mà hơn
+            var dur = TimeSpan.FromSeconds(2.5);
 
+            // Dùng PowerEase với Power = 2 để có hiệu ứng mượt mà, tự nhiên hơn
             var dayAnim = new DoubleAnimation
             {
                 To = targetNight ? 0 : 1,
                 Duration = dur,
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+                EasingFunction = new PowerEase { Power = 2, EasingMode = EasingMode.EaseInOut }
             };
 
             var nightAnim = new DoubleAnimation
             {
                 To = targetNight ? 1 : 0,
                 Duration = dur,
-                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+                EasingFunction = new PowerEase { Power = 2, EasingMode = EasingMode.EaseInOut }
             };
 
+            // Update assets ở giữa quá trình chuyển đổi (50%) và đảm bảo pipes mới cũng đúng màu
+            // Dùng DispatcherTimer với interval lớn hơn để tối ưu
+            bool assetsUpdated = false;
+            var updateTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(dur.TotalSeconds * 0.5) // Update ở 50%
+            };
+            
+            // Update isNight ngay lập tức để pipes mới được tạo sẽ dùng màu đúng
+            isNight = targetNight;
+            
+            updateTimer.Tick += (_, __) =>
+            {
+                if (!assetsUpdated)
+                {
+                    UpdateDynamicAssets(targetNight);
+                    UseBirdFramesForTheme(targetNight);
+                    assetsUpdated = true;
+                    updateTimer.Stop();
+                }
+            };
+            updateTimer.Start();
+            
             dayAnim.Completed += (_, __) =>
             {
+                updateTimer.Stop();
                 isTransitioning = false;
+                // Đảm bảo isNight đã được set và update lại tất cả assets một lần nữa
                 isNight = targetNight;
-
                 UpdateDynamicAssets(targetNight);
                 UseBirdFramesForTheme(targetNight);
             };
@@ -427,9 +467,15 @@ namespace PRN212.G5.FlappyBird.Views
                 if (state.Image != null && GameCanvas.Children.Contains(state.Image))
                     GameCanvas.Children.Remove(state.Image);
             }
+            foreach (var gate in gates)
+            {
+                if (gate.Gate != null && GameCanvas.Children.Contains(gate.Gate))
+                    GameCanvas.Children.Remove(gate.Gate);
+            }
             pipePairs.Clear();
             clouds.Clear();
             noTouchObstacles.Clear();
+            gates.Clear();
         }
 
         private void CreateClouds()
@@ -506,6 +552,65 @@ namespace PRN212.G5.FlappyBird.Views
                 {
                     System.Diagnostics.Debug.WriteLine($"[NoTouch] ERROR: {ex.Message}");
                 }
+            }
+            
+            // Tăng counter sau khi spawn NoTouch
+            noTouchSpawnCount++;
+            
+            // Chỉ tạo cổng ở lần thứ 2 (sau 1 lần spawn NoTouch)
+            // Lần 1: noTouchSpawnCount = 1, không có cổng
+            // Lần 2: noTouchSpawnCount = 2, có cổng, reset về 0
+            if (noTouchSpawnCount >= 2)
+            {
+                // Tạo cổng (gate) khi spawn NoTouch - đặt ở giữa màn hình
+                CreateGate(startX + (count * 150) + 200); // Đặt cổng sau nhóm NoTouch
+                noTouchSpawnCount = 0; // Reset counter
+            }
+        }
+        
+        private void CreateGate(double gateX)
+        {
+            try
+            {
+                // Tạo cổng hình tròn - ban ngày màu đêm (tối), ban đêm màu ban ngày (sáng)
+                // Ban ngày: màu tối (DarkBlue, DarkPurple) để nổi bật trên nền sáng
+                // Ban đêm: màu sáng (Yellow, Gold) để nổi bật trên nền tối
+                Color gateColor = isNight ? Colors.Gold : Colors.DarkBlue;
+                
+                var gate = new Ellipse
+                {
+                    Width = 80, // Kích thước 80x80
+                    Height = 80, // Hình tròn
+                    Fill = new SolidColorBrush(gateColor),
+                    Opacity = 0.9,
+                    Stroke = new SolidColorBrush(Colors.White),
+                    StrokeThickness = 2
+                };
+                
+                // Tắt animation nhấp nháy để giảm lag - chỉ dùng opacity cố định
+                // Không dùng animation để tránh lag khi gần cổng
+                
+                // Tối ưu rendering
+                RenderOptions.SetBitmapScalingMode(gate, BitmapScalingMode.LowQuality);
+                RenderOptions.SetEdgeMode(gate, EdgeMode.Aliased);
+                
+                GameCanvas.Children.Add(gate);
+                Canvas.SetLeft(gate, gateX);
+                Canvas.SetTop(gate, (CanvasHeight - 80) / 2); // Ở giữa màn hình theo chiều dọc
+                Panel.SetZIndex(gate, 20); // Cao hơn NoTouch
+                
+                var gateState = new GateState
+                {
+                    Gate = gate,
+                    SpawnX = gateX,
+                    IsActivated = false
+                };
+                
+                gates.Add(gateState);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[Gate] ERROR: {ex.Message}");
             }
         }
 
@@ -1071,6 +1176,7 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void GameLoop(object? sender, EventArgs e)
         {
+            frameCount++; // Tăng frame counter để tối ưu collision detection
             if (!isPlaying || isGameOver) return;
 
             double birdTop = Canvas.GetTop(FlappyBird);
@@ -1475,7 +1581,54 @@ namespace PRN212.G5.FlappyBird.Views
                     return;
                 }
             }
+            
+            // Xử lý Gates (cổng)
+            for (int i = gates.Count - 1; i >= 0; i--)
+            {
+                if (i < 0 || i >= gates.Count) break;
+                var gateState = gates[i];
+                if (gateState == null || gateState.Gate == null || !GameCanvas.Children.Contains(gateState.Gate))
+                {
+                    if (i < gates.Count)
+                        gates.RemoveAt(i);
+                    continue;
+                }
 
+                double gateX = Canvas.GetLeft(gateState.Gate);
+                if (double.IsNaN(gateX) || gateX < -150)
+                {
+                    // Cổng đã đi qua màn hình, xóa nó
+                    if (GameCanvas.Children.Contains(gateState.Gate))
+                        GameCanvas.Children.Remove(gateState.Gate);
+                    gates.RemoveAt(i);
+                    continue;
+                }
+
+                // Di chuyển cổng ngang
+                Canvas.SetLeft(gateState.Gate, gateX - speed);
+
+                // Kiểm tra collision với chim - chỉ kiểm tra khi cổng gần chim để tối ưu
+                if (!gateState.IsActivated && graceTicksRemaining <= 0)
+                {
+                    // Chỉ kiểm tra collision khi cổng ở gần chim (trong phạm vi 150px) và mỗi 5 frame để giảm lag
+                    double birdX = Canvas.GetLeft(FlappyBird);
+                    double distance = Math.Abs(gateX - birdX);
+                    
+                    // Chỉ kiểm tra khi gần và mỗi 5 frame (giảm tần suất kiểm tra từ mỗi frame xuống mỗi 5 frame)
+                    if (distance < 150 && (frameCount % 5 == 0))
+                    {
+                        if (FlappyBird.CollidesWith(gateState.Gate))
+                        {
+                            gateState.IsActivated = true;
+                            // Trigger chuyển đổi ngày/đêm
+                            SmoothToggleDayNight();
+                            
+                            // Thêm hiệu ứng khi vào cổng - làm cổng sáng lên (đơn giản hơn)
+                            gateState.Gate.Opacity = 1.0;
+                        }
+                    }
+                }
+            }
 
             double currentBirdTop = Canvas.GetTop(FlappyBird);
 
