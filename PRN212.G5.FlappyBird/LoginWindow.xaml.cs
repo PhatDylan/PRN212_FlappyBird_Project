@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Windows;
+using System.Windows.Media;
 using PRN212.G5.FlappyBird.Views;
 
 namespace PRN212.G5.FlappyBird
@@ -11,25 +12,74 @@ namespace PRN212.G5.FlappyBird
         private const double MaxPipeSpeed = 10.0;
 
         private double selectedPipeSpeed = DefaultPipeSpeed;
+        private double musicVolume = 50;
+
+        private MediaPlayer mediaPlayer; // Dùng MediaPlayer thay vì MediaElement
 
         public LoginWindow(double initialPipeSpeed = DefaultPipeSpeed)
         {
             InitializeComponent();
 
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
+
+            // Khởi tạo MediaPlayer
+            InitializeMediaPlayer();
+        }
+
+        private void InitializeMediaPlayer()
+        {
+            try
+            {
+                mediaPlayer = new MediaPlayer();
+                mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
+
+                // Load nhạc từ resource
+                var uri = new Uri("pack://application:,,,/Assets/BGM.mp3");
+                mediaPlayer.Open(uri);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể load nhạc: {ex.Message}");
+            }
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Volume = musicVolume / 100.0;
+                mediaPlayer.Play();
+            }
+        }
+
+        private void MediaPlayer_MediaEnded(object sender, EventArgs e)
+        {
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Position = TimeSpan.Zero;
+                mediaPlayer.Play();
+            }
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            var mainWindow = new MainWindow(selectedPipeSpeed);        
-            Application.Current.MainWindow = mainWindow;         mainWindow.Show();
+            // Dừng và giải phóng MediaPlayer
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Stop();
+                mediaPlayer.Close();
+            }
 
-                Close();
+            var mainWindow = new MainWindow(selectedPipeSpeed);
+            Application.Current.MainWindow = mainWindow;
+            mainWindow.Show();
+
+            Close();
         }
 
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            var settingsWindow = new SettingsWindow(selectedPipeSpeed)
+            var settingsWindow = new SettingsWindow(selectedPipeSpeed, musicVolume)
             {
                 Owner = this
             };
@@ -37,6 +87,13 @@ namespace PRN212.G5.FlappyBird
             if (settingsWindow.ShowDialog() == true)
             {
                 selectedPipeSpeed = Math.Clamp(settingsWindow.SelectedPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
+                musicVolume = settingsWindow.SelectedVolume;
+
+                // Cập nhật volume
+                if (mediaPlayer != null)
+                {
+                    mediaPlayer.Volume = musicVolume / 100.0;
+                }
             }
         }
 
@@ -44,7 +101,17 @@ namespace PRN212.G5.FlappyBird
         {
             MessageBox.Show("Skins clicked (TODO).", "Skins", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+
+        protected override void OnClosed(EventArgs e)
+        {
+            // Cleanup khi đóng window
+            if (mediaPlayer != null)
+            {
+                mediaPlayer.Stop();
+                mediaPlayer.Close();
+                mediaPlayer = null;
+            }
+            base.OnClosed(e);
+        }
     }
 }
-
-
