@@ -21,7 +21,6 @@ namespace PRN212.G5.FlappyBird.Views
         private readonly AccountRepo accountRepo = new();
         private Account currentAccount;
 
-        // Bird frames
         private BitmapImage[] dayBirdFlyFrames = Array.Empty<BitmapImage>();
         private BitmapImage[] dayBirdFallFrames = Array.Empty<BitmapImage>();
         private BitmapImage[] nightBirdFlyFrames = Array.Empty<BitmapImage>();
@@ -33,7 +32,6 @@ namespace PRN212.G5.FlappyBird.Views
         private int birdFrameIndex = 0;
         private bool isFallingAnimation = false;
 
-        // Game State
         private double birdSpeed = 0;
         private int score = 0;
         private int highScore = 0;
@@ -66,13 +64,14 @@ namespace PRN212.G5.FlappyBird.Views
 
         private bool isTransitioning = false;
 
-        public MainWindow(Account account)
+        public MainWindow(Account account, double initialPipeSpeed)
         {
             InitializeComponent();
 
             currentAccount = account;
+            selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
+            pipeSpeed = selectedPipeSpeed;
 
-            this.KeyDown += Window_KeyDown;
 
             gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             gameTimer.Tick += GameLoop;
@@ -88,21 +87,18 @@ namespace PRN212.G5.FlappyBird.Views
             LoadAllBirdFrames();
             UseBirdFramesForTheme(false);
 
-            if (StartButton != null)
-            {
-                StartButton.Click -= BtnStart_Click;
-                StartButton.Click += BtnStart_Click;
-            }
+            Loaded += MainWindow_OnLoaded;
+        }
 
-            ShowStartScreen();
+        private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
+        {
+            StartGame();
         }
 
         private string Pack(string file) => $"pack://application:,,,/Assets/{file}";
 
-        // ========= LOAD BIRD FRAMES =========
         private void LoadAllBirdFrames()
         {
-            // Day (v�ng)
             dayBirdFlyFrames = new[]
             {
                 LoadBitmapSafe("birdfly-1.png"),
@@ -112,7 +108,6 @@ namespace PRN212.G5.FlappyBird.Views
                 LoadBitmapSafe("birdfall-1.png"),
             };
 
-            // Night (xanh)
             nightBirdFlyFrames = new[]
             {
                 LoadBitmapSafe("birdfly-3.png")
@@ -131,8 +126,8 @@ namespace PRN212.G5.FlappyBird.Views
 
         private bool HasMissing(BitmapImage[] arr)
         {
-            foreach (var b in arr)
-                if (b == null) return true;
+            foreach (var image in arr)
+                if (image == null) return true;
             return false;
         }
 
@@ -160,60 +155,18 @@ namespace PRN212.G5.FlappyBird.Views
                 FlappyBird.Source = currentFlyFrames[0];
         }
 
-        // ========= UI FLOW =========
-        private void ShowStartScreen()
-        {
-            isPlaying = false;
-            isGameOver = false;
-
-            gameTimer.Stop();
-            birdAnimTimer.Stop();
-            dayNightTimer.Stop();
-
-            ClearDynamicObjects();
-
-            score = 0;
-            ScoreText.Text = "Score: 0";
-            ScoreText.Visibility = Visibility.Collapsed;
-            HighScoreText.Visibility = Visibility.Collapsed;
-
-            highScore = currentAccount.HighScore;
-            HighScoreText.Text = $"High Score: {highScore}";
-
-            // ? CHIM ? V? TR� START (b�n ph?i logo)
-            Canvas.SetLeft(FlappyBird, 700);
-            Canvas.SetTop(FlappyBird, 120);
-            Panel.SetZIndex(FlappyBird, 10);
-            birdSpeed = 0;
-
-            StartPanel.Visibility = Visibility.Visible;
-            StartPanelUI.Visibility = Visibility.Visible;
-            GameOverPanel.Visibility = Visibility.Collapsed;
-
-            // ? HI?N TH? LOGINPAGE, ?N DAY/NIGHT
-            ForceResetToLoginPage();
-
-            // Cho chim v? c�nh
-            isFallingAnimation = false;
-            birdFrameIndex = 0;
-            UseBirdFramesForTheme(false);
-            birdAnimTimer.Start();
-        }
-
         private void StartGame()
         {
+            ResetStageToDay();
+
             isGameOver = false;
             isPlaying = true;
 
-            StartPanel.Visibility = Visibility.Collapsed;
-            StartPanel.IsHitTestVisible = false;
-            StartPanelUI.Visibility = Visibility.Collapsed;
             GameOverPanel.Visibility = Visibility.Collapsed;
 
             ScoreText.Visibility = Visibility.Visible;
             HighScoreText.Visibility = Visibility.Visible;
 
-            // ⭐ ĐƯA CHIM VỀ VỊ TRÍ CHƠI
             Canvas.SetLeft(FlappyBird, 70);
             Canvas.SetTop(FlappyBird, 247);
             Panel.SetZIndex(FlappyBird, 5);
@@ -231,12 +184,58 @@ namespace PRN212.G5.FlappyBird.Views
 
             graceTicksRemaining = StartGraceTicks;
 
-            // ? FADE LoginPage ? DayStage
-            FadeFromLoginToDay();
+            isFallingAnimation = false;
+            birdFrameIndex = 0;
+            UseBirdFramesForTheme(false);
 
             gameTimer.Start();
             birdAnimTimer.Start();
             dayNightTimer.Start();
+        }
+
+        private void ResetStageToDay(bool animate = false)
+        {
+            isTransitioning = false;
+
+            DayLayer.BeginAnimation(UIElement.OpacityProperty, null);
+            NightLayer.BeginAnimation(UIElement.OpacityProperty, null);
+
+            if (animate)
+            {
+                var dur = TimeSpan.FromSeconds(0.3);
+
+                var dayAnim = new DoubleAnimation
+                {
+                    To = 1,
+                    Duration = dur,
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+
+                var nightAnim = new DoubleAnimation
+                {
+                    To = 0,
+                    Duration = dur,
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+
+                dayAnim.Completed += (_, __) =>
+                {
+                    isNight = false;
+                    UpdateDynamicAssets(false);
+                    UseBirdFramesForTheme(false);
+                };
+
+                DayLayer.BeginAnimation(UIElement.OpacityProperty, dayAnim);
+                NightLayer.BeginAnimation(UIElement.OpacityProperty, nightAnim);
+            }
+            else
+            {
+                DayLayer.Opacity = 1;
+                NightLayer.Opacity = 0;
+                isNight = false;
+                UpdateDynamicAssets(false);
+                UseBirdFramesForTheme(false);
+            }
         }
 
         private void EndGame()
@@ -263,53 +262,6 @@ namespace PRN212.G5.FlappyBird.Views
             birdFrameIndex = 0;
         }
 
-        // ========= LOGINPAGE / DAY MANAGEMENT =========
-        private void ForceResetToLoginPage()
-        {
-            isNight = false;
-            isTransitioning = false;
-
-            // D?ng m?i animation
-            if (LoginLayer != null) LoginLayer.BeginAnimation(UIElement.OpacityProperty, null);
-            DayLayer.BeginAnimation(UIElement.OpacityProperty, null);
-            NightLayer.BeginAnimation(UIElement.OpacityProperty, null);
-
-            // ? HI?N TH? LOGINPAGE, ?N DAY/NIGHT
-            if (LoginLayer != null) LoginLayer.Opacity = 1;
-            DayLayer.Opacity = 0;
-            NightLayer.Opacity = 0;
-
-            UseBirdFramesForTheme(false);
-        }
-
-        private void FadeFromLoginToDay()
-        {
-            var dur = TimeSpan.FromSeconds(0.6);
-
-            // LoginPage fade out
-            var loginFadeOut = new DoubleAnimation
-            {
-                To = 0,
-                Duration = dur,
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            // DayLayer fade in
-            var dayFadeIn = new DoubleAnimation
-            {
-                To = 1,
-                Duration = dur,
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            if (LoginLayer != null)
-                LoginLayer.BeginAnimation(UIElement.OpacityProperty, loginFadeOut);
-            DayLayer.BeginAnimation(UIElement.OpacityProperty, dayFadeIn);
-
-            isNight = false;
-        }
-
-        // ========= SMOOTH DAY/NIGHT TRANSITION =========
         private void SmoothToggleDayNight()
         {
             if (isTransitioning) return;
@@ -350,20 +302,19 @@ namespace PRN212.G5.FlappyBird.Views
             string pipeFile = night ? "Pipe-night.png" : "Pipe-day.png";
             string cloudFile = night ? "Cloud-Night.png" : "Cloud-Day.png";
 
-            foreach (var p in pipesTop)
-                p.Source = new BitmapImage(new Uri(Pack(pipeFile)));
-            foreach (var p in pipesBottom)
-                p.Source = new BitmapImage(new Uri(Pack(pipeFile)));
-            foreach (var c in clouds)
-                c.Source = new BitmapImage(new Uri(Pack(cloudFile)));
+            foreach (var pipe in pipesTop)
+                pipe.Source = new BitmapImage(new Uri(Pack(pipeFile)));
+            foreach (var pipe in pipesBottom)
+                pipe.Source = new BitmapImage(new Uri(Pack(pipeFile)));
+            foreach (var cloud in clouds)
+                cloud.Source = new BitmapImage(new Uri(Pack(cloudFile)));
         }
 
-        // ========= BUILD SCENE =========
         private void ClearDynamicObjects()
         {
-            foreach (var p in pipesTop) GameCanvas.Children.Remove(p);
-            foreach (var p in pipesBottom) GameCanvas.Children.Remove(p);
-            foreach (var c in clouds) GameCanvas.Children.Remove(c);
+            foreach (var pipe in pipesTop) GameCanvas.Children.Remove(pipe);
+            foreach (var pipe in pipesBottom) GameCanvas.Children.Remove(pipe);
+            foreach (var cloud in clouds) GameCanvas.Children.Remove(cloud);
             pipesTop.Clear();
             pipesBottom.Clear();
             clouds.Clear();
@@ -443,7 +394,6 @@ namespace PRN212.G5.FlappyBird.Views
             Panel.SetZIndex(bottom, 3);
         }
 
-        // ========= GAME LOOP =========
         private void GameLoop(object? sender, EventArgs e)
         {
             if (!isPlaying || isGameOver) return;
@@ -455,13 +405,13 @@ namespace PRN212.G5.FlappyBird.Views
             double speed = pipeSpeed + score * 0.1;
             if (graceTicksRemaining > 0) graceTicksRemaining--;
 
-            foreach (var c in clouds)
+            foreach (var cloud in clouds)
             {
-                Canvas.SetLeft(c, Canvas.GetLeft(c) - cloudSpeed);
-                if (Canvas.GetLeft(c) < -150)
+                Canvas.SetLeft(cloud, Canvas.GetLeft(cloud) - cloudSpeed);
+                if (Canvas.GetLeft(cloud) < -150)
                 {
-                    Canvas.SetLeft(c, 1000 + rnd.Next(0, 200));
-                    Canvas.SetTop(c, rnd.Next(20, 150));
+                    Canvas.SetLeft(cloud, 1000 + rnd.Next(0, 200));
+                    Canvas.SetTop(cloud, rnd.Next(20, 150));
                 }
             }
 
@@ -495,7 +445,6 @@ namespace PRN212.G5.FlappyBird.Views
                 }
             }
 
-            // Gi?i h?n chim kh�ng gi?t
             double currentBirdTop = Canvas.GetTop(FlappyBird);
 
             if (currentBirdTop < 0)
@@ -504,7 +453,7 @@ namespace PRN212.G5.FlappyBird.Views
                 birdSpeed = 0;
             }
 
-            double groundLevel = 500 - FlappyBird.Height;
+            double groundLevel = CanvasHeight - FlappyBird.Height;
             if (currentBirdTop > groundLevel)
             {
                 Canvas.SetTop(FlappyBird, groundLevel);
@@ -538,89 +487,32 @@ namespace PRN212.G5.FlappyBird.Views
             }
         }
 
-        private void BtnStart_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                StartGame();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error: {ex.Message}", "Error",
-                                MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        // ??? REPLAY: CHOI L?I LU�N KH�NG V? LOGINPAGE ???
         private void BtnReplay_Click(object sender, RoutedEventArgs e)
         {
-            birdAnimTimer.Stop();
+            StopGameLoops();
             GameOverPanel.Visibility = Visibility.Collapsed;
 
-            // ? N?u dang ? Night, fade nhanh v? Day
-            if (isNight)
-            {
-                var dur = TimeSpan.FromSeconds(0.3);
-                var dayAnim = new DoubleAnimation
-                {
-                    To = 1,
-                    Duration = dur,
-                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-                };
-                var nightAnim = new DoubleAnimation
-                {
-                    To = 0,
-                    Duration = dur,
-                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-                };
-
-                dayAnim.Completed += (s, ev) =>
-                {
-                    isNight = false;
-                    UpdateDynamicAssets(false);
-                    UseBirdFramesForTheme(false);
-                };
-
-                DayLayer.BeginAnimation(UIElement.OpacityProperty, dayAnim);
-                NightLayer.BeginAnimation(UIElement.OpacityProperty, nightAnim);
-            }
-
-            // ? ?n LoginLayer n?u dang hi?n th?
-            if (LoginLayer != null && LoginLayer.Opacity > 0)
-            {
-                LoginLayer.BeginAnimation(UIElement.OpacityProperty, null);
-                LoginLayer.Opacity = 0;
-            }
-
-            // B?t d?u l?i game
+            ResetStageToDay(true);
             StartGame();
         }
 
         private void BtnLeft_Click(object sender, RoutedEventArgs e)
         {
+            StopGameLoops();
+
+            var loginWindow = new LoginWindow(currentAccount, selectedPipeSpeed);
+
+            Application.Current.MainWindow = loginWindow;
+            loginWindow.Show();
+
+            Close();
+        }
+
+        private void StopGameLoops()
+        {
+            gameTimer.Stop();
             birdAnimTimer.Stop();
-            ShowStartScreen();
-        }
-
-        private void BtnSettings_Click(object sender, RoutedEventArgs e)
-        {
-            var settingsWindow = new SettingsWindow(selectedPipeSpeed)
-            {
-                Owner = this
-            };
-
-            if (settingsWindow.ShowDialog() == true)
-            {
-                double newSpeed = Math.Clamp(settingsWindow.SelectedPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
-                selectedPipeSpeed = newSpeed;
-                pipeSpeed = newSpeed;
-            }
-        }
-
-        private void BtnSkins_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Skins clicked (TODO).", "Skins",
-                MessageBoxButton.OK, MessageBoxImage.Information);
+            dayNightTimer.Stop();
         }
     }
 
