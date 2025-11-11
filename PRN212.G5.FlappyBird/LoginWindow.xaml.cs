@@ -26,6 +26,8 @@ namespace PRN212.G5.FlappyBird
             InitializeComponent();
 
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
+
+            // Khởi tạo MediaPlayer      
         }
 
         private void PreloadBgm()
