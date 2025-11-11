@@ -1,5 +1,3 @@
-using FlappyBird.Business.Models;
-using FlappyBird.Data.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -9,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.IO;
 
 namespace PRN212.G5.FlappyBird.Views
 {
@@ -17,9 +16,9 @@ namespace PRN212.G5.FlappyBird.Views
         private readonly DispatcherTimer gameTimer = new();
         private readonly DispatcherTimer birdAnimTimer = new();
         private readonly DispatcherTimer dayNightTimer = new();
+        private readonly string playerName = "Player";
+        private const string HighScoreFilePath = "highscore.txt";
 
-        private readonly AccountRepo accountRepo = new();
-        private Account currentAccount;
 
         private BitmapImage[] dayBirdFlyFrames = Array.Empty<BitmapImage>();
         private BitmapImage[] dayBirdFallFrames = Array.Empty<BitmapImage>();
@@ -64,14 +63,12 @@ namespace PRN212.G5.FlappyBird.Views
 
         private bool isTransitioning = false;
 
-        public MainWindow(Account account, double initialPipeSpeed)
+        public MainWindow(double initialPipeSpeed)
         {
             InitializeComponent();
 
-            currentAccount = account;
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
             pipeSpeed = selectedPipeSpeed;
-
 
             gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             gameTimer.Tick += GameLoop;
@@ -82,14 +79,14 @@ namespace PRN212.G5.FlappyBird.Views
             dayNightTimer.Interval = TimeSpan.FromMinutes(0.50);
             dayNightTimer.Tick += (_, __) => SmoothToggleDayNight();
 
-            Title = $"Flappy Bird - {currentAccount.Name}";
+            highScore = LoadHighScore();
+            Title = $"Flappy Bird - {playerName}";
 
             LoadAllBirdFrames();
             UseBirdFramesForTheme(false);
 
             Loaded += MainWindow_OnLoaded;
         }
-
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
             StartGame();
@@ -175,7 +172,6 @@ namespace PRN212.G5.FlappyBird.Views
             pipeSpeed = selectedPipeSpeed;
             ScoreText.Text = "Score: 0";
 
-            highScore = currentAccount.HighScore;
             HighScoreText.Text = $"High Score: {highScore}";
 
             ClearDynamicObjects();
@@ -238,6 +234,37 @@ namespace PRN212.G5.FlappyBird.Views
             }
         }
 
+        private int LoadHighScore()
+        {
+            try
+            {
+                if (File.Exists(HighScoreFilePath) &&
+                    int.TryParse(File.ReadAllText(HighScoreFilePath), out var stored) &&
+                    stored >= 0)
+                {
+                    return stored;
+                }
+            }
+            catch
+            {
+                // ignore and fallback to zero
+            }
+
+            return 0;
+        }
+
+        private void SaveHighScore(int score)
+        {
+            try
+            {
+                File.WriteAllText(HighScoreFilePath, Math.Max(0, score).ToString());
+            }
+            catch
+            {
+                // ignore persistence errors
+            }
+        }
+
         private void EndGame()
         {
             if (isGameOver) return;
@@ -250,9 +277,7 @@ namespace PRN212.G5.FlappyBird.Views
             if (score > highScore)
             {
                 highScore = score;
-                accountRepo.UpdateHighScore(currentAccount.Email, highScore);
-                currentAccount.HighScore = highScore;
-                // Update high score display on canvas
+                SaveHighScore(highScore);
                 if (HighScoreText != null) HighScoreText.Text = $"High Score: {highScore}";
             }
 
@@ -502,7 +527,7 @@ namespace PRN212.G5.FlappyBird.Views
         {
             StopGameLoops();
 
-            var loginWindow = new LoginWindow(currentAccount, selectedPipeSpeed);
+            var loginWindow = new LoginWindow(selectedPipeSpeed);
 
             Application.Current.MainWindow = loginWindow;
             loginWindow.Show();
@@ -541,5 +566,19 @@ namespace PRN212.G5.FlappyBird.Views
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
