@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -67,10 +68,15 @@ namespace PRN212.G5.FlappyBird.Views
             public int TargetMovementStage { get; set; } // 0 = chưa bắt đầu, 1 = di chuyển đến target 1, 2 = di chuyển đến target 2, 3 = dừng
             public int AnimationDelayFrames { get; set; } // Số frame delay trước khi animation bắt đầu
             public int AnimationFrameCount { get; set; } // Đếm số frame đã trôi qua
+            public int GroupId { get; set; } = -1; // ID của group (nếu là -1 thì không thuộc group nào)
+            public bool IsGroupLeader { get; set; } = false; // true nếu là pipe đầu tiên trong group
+            public int GroupIndex { get; set; } = 0; // Index trong group (0 = leader, 1, 2, 3...)
         }
 
         private readonly List<PipePairState> pipePairs = new();
         private readonly List<Image> clouds = new();
+        private int nextGroupId = 0; // ID cho group pipes tiếp theo
+        private const double GroupPipeSpacing = 90; // Khoảng cách giữa các pipes trong group (nhỏ hơn PipeSpacing = 260)
         
         // NoTouch Obstacle State
         private sealed class NoTouchState
@@ -245,6 +251,7 @@ namespace PRN212.G5.FlappyBird.Views
             totalPipesPassed = 0;
             nextNoTouchSpawnAt = -1;
             lastSpawnedPhase = -1; // Reset phase tracking
+            nextGroupId = 0; // Reset group ID
 
             graceTicksRemaining = StartGraceTicks;
 
@@ -750,6 +757,175 @@ namespace PRN212.G5.FlappyBird.Views
             ApplyPipeGeometry(pair, pair.CurrentTopHeight);
         }
 
+        // Hàm chỉ random animation properties, KHÔNG thay đổi height
+        private void RandomizePipeAnimationOnly(PipePairState pair)
+        {
+            // Giữ nguyên BaseTopHeight và CurrentTopHeight đã được set
+            double baseTopHeight = pair.BaseTopHeight;
+            int minTopHeight = (int)pair.MinTopHeight;
+            int minBottomHeight = (int)pair.MinBottomHeight;
+            int maxTopHeight = 590 - (int)gap - minBottomHeight;
+            
+            // Chỉ có animation khi score >= 10
+            bool enableAnimation = false;
+            double animationChance = 0.0;
+            
+            if (score >= 40)
+            {
+                animationChance = 0.80;
+            }
+            else if (score >= 30)
+            {
+                animationChance = 0.80;
+            }
+            else if (score >= 20)
+            {
+                animationChance = 0.65;
+            }
+            else if (score >= 10)
+            {
+                animationChance = 0.50;
+            }
+            
+            enableAnimation = rnd.NextDouble() < animationChance;
+            
+            if (enableAnimation)
+            {
+                double maxAmplitude = Math.Max(0, Math.Min(baseTopHeight - minTopHeight, maxTopHeight - baseTopHeight));
+                
+                double baseAmplitude = score >= 40 ? 140 : score >= 30 ? 130 : score >= 20 ? 120 : 100;
+                double amplitudeRange = score >= 40 ? 70 : score >= 30 ? 65 : score >= 20 ? 60 : 50;
+                double desiredAmplitude = baseAmplitude + rnd.NextDouble() * amplitudeRange;
+                double amplitude = maxAmplitude > 0 ? Math.Min(desiredAmplitude, maxAmplitude) : 0;
+                
+                double oscillationChance = 0.0;
+                if (score >= 40)
+                {
+                    oscillationChance = 0.80;
+                }
+                else if (score >= 30)
+                {
+                    oscillationChance = 0.80;
+                }
+                else if (score >= 20)
+                {
+                    oscillationChance = 0.65;
+                }
+                else if (score >= 10)
+                {
+                    oscillationChance = 0.50;
+                }
+                
+                bool useOscillation = rnd.NextDouble() < oscillationChance;
+                bool useTarget = !useOscillation || (score >= 20 && rnd.NextDouble() < 0.4);
+                
+                bool useJumpPattern = false;
+                if (score >= 20 && !useOscillation && useTarget)
+                {
+                    useJumpPattern = rnd.NextDouble() < 0.3;
+                }
+                
+                int delayFrames = 0;
+                if (score >= 20 && rnd.NextDouble() < 0.25)
+                {
+                    delayFrames = rnd.Next(10, 40);
+                }
+                pair.AnimationDelayFrames = delayFrames;
+                pair.AnimationFrameCount = 0;
+                
+                if (useOscillation && amplitude > 20)
+                {
+                    pair.IsOscillating = true;
+                    pair.AnimationAmplitude = amplitude;
+                    pair.AnimationPhase = rnd.NextDouble() * Math.PI * 2;
+                    double oscSpeed = score >= 40 ? 0.05 + rnd.NextDouble() * 0.02 : 
+                                     score >= 30 ? 0.04 + rnd.NextDouble() * 0.02 :
+                                     score >= 20 ? 0.04 + rnd.NextDouble() * 0.02 : 0.03 + rnd.NextDouble() * 0.02;
+                    pair.AnimationSpeed = oscSpeed;
+                    pair.EnableVerticalAnimation = true;
+                    pair.IsMoving = false;
+                    pair.HasTargetMovement = useTarget && score >= 20;
+                    
+                    if (pair.HasTargetMovement)
+                    {
+                        double moveAmplitude = amplitude * 1.8;
+                        moveAmplitude = Math.Min(moveAmplitude, maxAmplitude);
+                        bool moveUp = rnd.NextDouble() < 0.5;
+                        double targetOffset = moveUp ? -moveAmplitude : moveAmplitude;
+                        pair.TargetTopHeight = Math.Clamp(baseTopHeight + targetOffset, minTopHeight, maxTopHeight);
+                        pair.IsMoving = true;
+                        double baseSpeed = 0.5;
+                        double speedMultiplier = 1.0 + (score * 0.01);
+                        double moveSpeed = (baseSpeed + rnd.NextDouble() * 0.25) * Math.Min(speedMultiplier, 1.4);
+                        pair.TargetMovementSpeed = moveSpeed;
+                        double pipeX = Canvas.GetLeft(pair.Top);
+                        double birdX = 70;
+                        pair.TargetStopX = birdX + PipeSpacing * 1.0;
+                    }
+                }
+                else if (useTarget)
+                {
+                    pair.IsOscillating = false;
+                    pair.HasTargetMovement = false;
+                    
+                    if (useJumpPattern)
+                    {
+                        pair.IsJumpPattern = true;
+                        double jumpAmplitude = Math.Min(amplitude * 2.0, maxAmplitude);
+                        bool jumpUp = rnd.NextDouble() < 0.5;
+                        double jumpOffset = jumpUp ? -jumpAmplitude : jumpAmplitude;
+                        double jumpHeight = Math.Clamp(baseTopHeight + jumpOffset, minTopHeight, maxTopHeight);
+                        pair.JumpTargetHeight = jumpHeight;
+                        pair.TargetTopHeight = jumpHeight;
+                        pair.TargetMovementStage = 1;
+                        double baseSpeed = 2.0;
+                        double speedMultiplier = 1.0 + (score * 0.01);
+                        double jumpSpeed = (baseSpeed + rnd.NextDouble() * 0.5) * Math.Min(speedMultiplier, 1.5);
+                        pair.TargetMovementSpeed = jumpSpeed;
+                        pair.EnableVerticalAnimation = true;
+                        pair.IsMoving = true;
+                    }
+                    else
+                    {
+                        pair.IsJumpPattern = false;
+                        double moveAmplitude = amplitude * 2.5;
+                        moveAmplitude = Math.Min(moveAmplitude, maxAmplitude);
+                        bool moveUp = rnd.NextDouble() < 0.5;
+                        double targetOffset = moveUp ? -moveAmplitude : moveAmplitude;
+                        pair.TargetTopHeight = Math.Clamp(baseTopHeight + targetOffset, minTopHeight, maxTopHeight);
+                        pair.IsMoving = true;
+                        double baseSpeed = 0.5;
+                        double speedMultiplier = 1.0 + (score * 0.01);
+                        double moveSpeed = (baseSpeed + rnd.NextDouble() * 0.25) * Math.Min(speedMultiplier, 1.4);
+                        pair.TargetMovementSpeed = moveSpeed;
+                        double pipeX = Canvas.GetLeft(pair.Top);
+                        double birdX = 70;
+                        pair.TargetStopX = birdX + PipeSpacing * 1.0;
+                        pair.EnableVerticalAnimation = true;
+                        pair.HasTargetMovement = true;
+                    }
+                }
+                else
+                {
+                    pair.EnableVerticalAnimation = false;
+                    pair.IsOscillating = false;
+                    pair.IsMoving = false;
+                    pair.HasTargetMovement = false;
+                    pair.IsJumpPattern = false;
+                }
+            }
+            else
+            {
+                pair.EnableVerticalAnimation = false;
+                pair.IsOscillating = false;
+                pair.IsMoving = false;
+                pair.HasTargetMovement = false;
+                pair.IsJumpPattern = false;
+                pair.AnimationDelayFrames = 0;
+                pair.AnimationFrameCount = 0;
+            }
+        }
+
         private void ApplyPipeGeometry(PipePairState pair, double desiredTopHeight)
         {
             double clampedTopHeight = Math.Clamp(desiredTopHeight, pair.MinTopHeight, 590 - gap - pair.MinBottomHeight);
@@ -768,6 +944,7 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void ApplyPipeAnimation(PipePairState pair)
         {
+            // Mỗi pipe trong group có animation riêng, không cần follow leader
             if (!pair.EnableVerticalAnimation)
             {
                 ApplyPipeGeometry(pair, pair.CurrentTopHeight);
@@ -920,6 +1097,21 @@ namespace PRN212.G5.FlappyBird.Views
                 var top = pair.Top;
                 var bottom = pair.Bottom;
 
+                // Bỏ qua pipes trong group (chỉ xử lý leader, các pipes khác sẽ follow leader)
+                if (pair.GroupId != -1 && !pair.IsGroupLeader)
+                {
+                    // Pipes trong group di chuyển cùng leader, giữ khoảng cách GroupPipeSpacing
+                    var leader = pipePairs.FirstOrDefault(p => p.GroupId == pair.GroupId && p.IsGroupLeader);
+                    if (leader != null)
+                    {
+                        double leaderX = Canvas.GetLeft(leader.Top);
+                        double offset = pair.GroupIndex * GroupPipeSpacing;
+                        Canvas.SetLeft(top, leaderX + offset);
+                        Canvas.SetLeft(bottom, leaderX + offset);
+                    }
+                    continue;
+                }
+
                 ApplyPipeAnimation(pair);
 
                 Canvas.SetLeft(top, Canvas.GetLeft(top) - speed);
@@ -927,6 +1119,21 @@ namespace PRN212.G5.FlappyBird.Views
 
                 if (Canvas.GetLeft(top) < -PipeWidth)
                 {
+                    // Nếu là leader của group, xóa tất cả pipes trong group
+                    if (pair.GroupId != -1 && pair.IsGroupLeader)
+                    {
+                        var groupPipes = pipePairs.Where(p => p.GroupId == pair.GroupId).ToList();
+                        foreach (var groupPipe in groupPipes)
+                        {
+                            if (groupPipe != pair)
+                            {
+                                GameCanvas.Children.Remove(groupPipe.Top);
+                                GameCanvas.Children.Remove(groupPipe.Bottom);
+                                pipePairs.Remove(groupPipe);
+                            }
+                        }
+                    }
+                    
                     double farthestRight = double.MinValue;
                     for (int j = 0; j < pipePairs.Count; j++)
                         if (j != i)
@@ -959,7 +1166,228 @@ namespace PRN212.G5.FlappyBird.Views
                     Canvas.SetLeft(top, newX);
                     Canvas.SetLeft(bottom, newX);
 
-                    RandomizePipe(pair);
+                    // Kiểm tra xem có tạo group pipes không
+                    // Score 15-49: 45% cơ hội, Score 50+: 65% cơ hội (tăng 15%)
+                    double groupChance = score >= 50 ? 0.65 : (score >= 15 ? 0.45 : 0.0);
+                    bool shouldCreateGroup = score >= 15 && rnd.NextDouble() < groupChance && pair.GroupId == -1;
+                    
+                    if (shouldCreateGroup)
+                    {
+                        // Tạo group pipes: size phụ thuộc vào score
+                        // Score 15-40: size 2-3, Score > 40: size 4
+                        int groupSize;
+                        if (score >= 15 && score <= 40)
+                        {
+                            groupSize = rnd.Next(2, 4); // 2-3 pipes
+                        }
+                        else // score > 40
+                        {
+                            groupSize = 4; // 4 pipes
+                        }
+                        int currentGroupId = nextGroupId++;
+                        
+                        // TẤT CẢ group pipes đều dùng pattern cầu thang (staircase)
+                        // Chọn loại: tĩnh hoặc có animation
+                        bool isAnimatedGroup = rnd.NextDouble() < 0.5; // 50% tĩnh, 50% animated
+                        
+                        int minTopHeight = 100;
+                        int minBottomHeight = 100;
+                        int maxTopHeight = 590 - gap - minBottomHeight;
+                        List<double> groupHeights = new List<double>();
+                        
+                        // TẤT CẢ group pipes đều dùng pattern cầu thang (staircase)
+                        // QUAN TRỌNG: Tạo hình cầu thang dựa trên BOTTOM height
+                        // Cầu thang lên: Bottom pipe 1 < Bottom pipe 2 < Bottom pipe 3 (bottom tăng dần)
+                        // Cầu thang xuống: Bottom pipe 1 > Bottom pipe 2 > Bottom pipe 3 (bottom giảm dần)
+                        // Gap giữa bottom pipe trước và top pipe sau = gap (180px) - CỐ ĐỊNH
+                        bool ascending = rnd.NextDouble() < 0.5; // Ngẫu nhiên lên hoặc xuống
+                        // Tĩnh: 50px, Animated: 20px
+                        double stepSize = isAnimatedGroup ? 20 : 50; // Chênh lệch bottom giữa các pipes
+                            
+                        // TẤT CẢ group pipes đều dùng pattern cầu thang
+                        double currentTopHeight;
+                        if (ascending)
+                        {
+                            // Cầu thang lên: Bottom tăng dần
+                            // Pipe đầu tiên: bottom thấp
+                            currentTopHeight = minTopHeight + rnd.Next(50, 150);
+                            groupHeights.Add(currentTopHeight);
+                            
+                            for (int g = 1; g < groupSize; g++)
+                            {
+                                // Bottom của pipe trước
+                                double bottomOfPrevious = currentTopHeight + gap;
+                                // Bottom của pipe sau = bottom của pipe trước + stepSize (tăng dần 10px) - ƯU TIÊN
+                                double nextBottom = bottomOfPrevious + stepSize;
+                                // Top height của pipe sau = nextBottom - gap (đảm bảo gap trong pipe = 180px)
+                                double nextTopHeight = nextBottom - gap;
+                                
+                                // Đảm bảo top height hợp lệ
+                                if (nextTopHeight < minTopHeight + 50)
+                                {
+                                    // Không thể tiếp tục, dừng group
+                                    break;
+                                }
+                                
+                                // Đảm bảo bottom không vượt quá màn hình
+                                if (nextBottom > 590 - minBottomHeight)
+                                {
+                                    // Không thể tiếp tục, dừng group
+                                    break;
+                                }
+                                
+                                nextTopHeight = Math.Clamp(nextTopHeight, minTopHeight + 50, 590 - gap - minBottomHeight);
+                                groupHeights.Add(nextTopHeight);
+                                currentTopHeight = nextTopHeight;
+                            }
+                        }
+                        else
+                        {
+                            // Cầu thang xuống: Bottom giảm dần
+                            // Pipe đầu tiên: bottom cao
+                            double maxBottom = 590 - minBottomHeight;
+                            double firstBottom = maxBottom - rnd.Next(0, 100);
+                            currentTopHeight = firstBottom - gap;
+                            currentTopHeight = Math.Clamp(currentTopHeight, minTopHeight + 50, 590 - gap - minBottomHeight);
+                            groupHeights.Add(currentTopHeight);
+                            
+                            for (int g = 1; g < groupSize; g++)
+                            {
+                                // Bottom của pipe trước
+                                double bottomOfPrevious = currentTopHeight + gap;
+                                // Bottom của pipe sau = bottom của pipe trước - stepSize (giảm dần 10px) - ƯU TIÊN
+                                double nextBottom = bottomOfPrevious - stepSize;
+                                // Top height của pipe sau = nextBottom - gap (đảm bảo gap trong pipe = 180px)
+                                double nextTopHeight = nextBottom - gap;
+                                
+                                // Đảm bảo top height hợp lệ
+                                if (nextTopHeight < minTopHeight + 50)
+                                {
+                                    // Không thể tiếp tục, dừng group
+                                    break;
+                                }
+                                
+                                // Đảm bảo bottom không xuống quá thấp
+                                if (nextBottom < gap + minTopHeight + 50)
+                                {
+                                    // Không thể tiếp tục, dừng group
+                                    break;
+                                }
+                                
+                                nextTopHeight = Math.Clamp(nextTopHeight, minTopHeight + 50, 590 - gap - minBottomHeight);
+                                groupHeights.Add(nextTopHeight);
+                                currentTopHeight = nextTopHeight;
+                            }
+                        }
+                        
+                        // Nếu không tạo được ít nhất 2 pipes, không tạo group (quay lại pipe bình thường)
+                        if (groupHeights.Count < 2)
+                        {
+                            pair.GroupId = -1;
+                            pair.IsGroupLeader = false;
+                            RandomizePipe(pair);
+                            continue; // Bỏ qua phần tạo group, tiếp tục với pipe bình thường
+                        }
+                        
+                        // Cập nhật groupSize thực tế
+                        groupSize = groupHeights.Count;
+                        
+                        // Pipe hiện tại là leader của group
+                        pair.GroupId = currentGroupId;
+                        pair.IsGroupLeader = true;
+                        pair.GroupIndex = 0;
+                        pair.BaseTopHeight = groupHeights[0];
+                        pair.CurrentTopHeight = groupHeights[0];
+                        
+                        // Set height trước (không thay đổi)
+                        pair.MinTopHeight = minTopHeight;
+                        pair.MinBottomHeight = minBottomHeight;
+                        ApplyPipeGeometry(pair, groupHeights[0]);
+                        
+                        if (isAnimatedGroup)
+                        {
+                            // Animated group: Chỉ random animation properties, KHÔNG thay đổi height
+                            RandomizePipeAnimationOnly(pair);
+                        }
+                        else
+                        {
+                            // Static group: Không có animation
+                            pair.EnableVerticalAnimation = false;
+                            pair.IsMoving = false;
+                            pair.IsOscillating = false;
+                            pair.HasTargetMovement = false;
+                            pair.IsJumpPattern = false;
+                        }
+                        
+                        // Tạo các pipes còn lại trong group (chỉ tạo đúng số pipes đã tính được)
+                        for (int g = 1; g < groupHeights.Count; g++)
+                        {
+                            double groupPipeX = newX + (g * GroupPipeSpacing);
+                            string pipeFile = isNight ? "Pipe-night.png" : "Pipe-day.png";
+                            
+                            var groupTop = new Image
+                            {
+                                Width = PipeWidth,
+                                Stretch = Stretch.Fill,
+                                Source = new BitmapImage(new Uri(Pack(pipeFile))),
+                                SnapsToDevicePixels = true,
+                                RenderTransformOrigin = new Point(0.5, 0.5),
+                                RenderTransform = new ScaleTransform { ScaleY = -1 }
+                            };
+                            var groupBottom = new Image
+                            {
+                                Width = PipeWidth,
+                                Stretch = Stretch.Fill,
+                                Source = new BitmapImage(new Uri(Pack(pipeFile))),
+                                SnapsToDevicePixels = true
+                            };
+                            
+                            GameCanvas.Children.Add(groupTop);
+                            GameCanvas.Children.Add(groupBottom);
+                            Canvas.SetLeft(groupTop, groupPipeX);
+                            Canvas.SetLeft(groupBottom, groupPipeX);
+                            
+                            var groupPair = new PipePairState(groupTop, groupBottom)
+                            {
+                                GroupId = currentGroupId,
+                                IsGroupLeader = false,
+                                GroupIndex = g,
+                                BaseTopHeight = groupHeights[g],
+                                CurrentTopHeight = groupHeights[g],
+                                MinTopHeight = minTopHeight,
+                                MinBottomHeight = minBottomHeight
+                            };
+                            
+                            // Set height trước (không thay đổi)
+                            groupPair.MinTopHeight = minTopHeight;
+                            groupPair.MinBottomHeight = minBottomHeight;
+                            ApplyPipeGeometry(groupPair, groupHeights[g]);
+                            
+                            if (isAnimatedGroup)
+                            {
+                                // Cầu thang animated: Chỉ random animation properties, KHÔNG thay đổi height
+                                RandomizePipeAnimationOnly(groupPair);
+                            }
+                            else
+                            {
+                                // Cầu thang tĩnh: Không có animation
+                                groupPair.EnableVerticalAnimation = false;
+                                groupPair.IsMoving = false;
+                                groupPair.IsOscillating = false;
+                                groupPair.HasTargetMovement = false;
+                                groupPair.IsJumpPattern = false;
+                            }
+                            
+                            pipePairs.Add(groupPair);
+                        }
+                    }
+                    else
+                    {
+                        // Pipe bình thường
+                        pair.GroupId = -1;
+                        pair.IsGroupLeader = false;
+                        RandomizePipe(pair);
+                    }
 
                     score++;
                     totalPipesPassed++;
