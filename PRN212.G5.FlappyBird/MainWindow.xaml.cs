@@ -370,7 +370,7 @@ namespace PRN212.G5.FlappyBird.Views
                 // Update X position từ StageService (không lấy từ UI)
                 // pair.X đã được update bởi stageService.UpdatePipePositions(speed)
 
-                // Bỏ qua pipes trong group (chỉ xử lý leader, các pipes khác sẽ follow leader)
+                // Xử lý pipes trong group (non-leader sẽ follow leader)
                 if (pair.GroupId != -1 && !pair.IsGroupLeader)
                 {
                     // Pipes trong group di chuyển cùng leader, giữ khoảng cách GroupPipeSpacing
@@ -383,7 +383,16 @@ namespace PRN212.G5.FlappyBird.Views
                         Canvas.SetLeft(bottom, leaderX + offset);
                         pair.X = leaderX + offset;
                     }
-                    continue;
+                    
+                    // Kiểm tra collision với group pipes (non-leader) - PHẢI CHECK TRƯỚC KHI CONTINUE
+                    if (gameService.GraceTicksRemaining <= 0 &&
+                        (FlappyBird.CollidesWith(top) || FlappyBird.CollidesWith(bottom)))
+                    {
+                        EndGame();
+                        return;
+                    }
+                    
+                    continue; // Bỏ qua phần xử lý khác, nhưng đã check collision rồi
                 }
 
                 ApplyPipeAnimation(pairUI);
