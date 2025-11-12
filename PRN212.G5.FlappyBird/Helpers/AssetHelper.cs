@@ -30,29 +30,6 @@ namespace PRN212.G5.FlappyBird.Helpers
             }
         }
 
-        /// <summary>
-        /// Lọc các frame null
-        /// </summary>
-        public static BitmapImage[] FilterNullFrames(BitmapImage[] frames)
-        {
-            var validFrames = new System.Collections.Generic.List<BitmapImage>();
-            foreach (var frame in frames)
-            {
-                if (frame != null)
-                    validFrames.Add(frame);
-            }
-            return validFrames.Count > 0 ? validFrames.ToArray() : frames;
-        }
-
-        /// <summary>
-        /// Kiểm tra xem có frame nào bị thiếu không
-        /// </summary>
-        public static bool HasMissing(BitmapImage[] arr)
-        {
-            foreach (var image in arr)
-                if (image == null) return true;
-            return false;
-        }
     }
 }
 

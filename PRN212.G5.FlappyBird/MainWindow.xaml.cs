@@ -268,7 +268,7 @@ namespace PRN212.G5.FlappyBird.Views
                         noTouchObstacles.Add(new NoTouchUI(obstacle, state));
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
                     // Error creating NoTouch
                 }
@@ -308,28 +308,6 @@ namespace PRN212.G5.FlappyBird.Views
         {
             var (top, bottom) = uiRenderer.CreatePipeUI(pairState);
             pipePairs.Add(new PipePairUI(top, bottom, pairState));
-        }
-
-        private void SyncPipesFromService()
-        {
-            // Remove old UI pipes
-            foreach (var pair in pipePairs)
-            {
-                if (pair.Top != null && GameCanvas.Children.Contains(pair.Top))
-                    GameCanvas.Children.Remove(pair.Top);
-                if (pair.Bottom != null && GameCanvas.Children.Contains(pair.Bottom))
-                    GameCanvas.Children.Remove(pair.Bottom);
-            }
-            pipePairs.Clear();
-
-            // Create UI pipes from StageService
-            foreach (var pairState in stageService.PipePairs)
-            {
-                if (pairState != null)
-                {
-                    CreatePipeUI(pairState);
-                }
-            }
         }
 
         // Methods RandomizePipe và RandomizePipeAnimationOnly đã được chuyển vào StageService
