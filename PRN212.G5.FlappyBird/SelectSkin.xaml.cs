@@ -130,8 +130,6 @@ namespace PRN212.G5.FlappyBird
             card.MouseDown += (s, e) =>
             {
                 SkinManager.SelectedSkinId = skin.Id;
-                MessageBox.Show($"{skin.DisplayName} selected!\nIt will be used in your next game.",
-                    "Skin Selected", MessageBoxButton.OK, MessageBoxImage.Information);
                 Close();
             };
 
