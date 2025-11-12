@@ -176,7 +176,7 @@ namespace PRN212.G5.FlappyBird.Views
         }
 
         private string Pack(string file) => $"pack://application:,,,/Assets/{file}";
-        private string AssetPath(string file) => Path.Combine(AppContext.BaseDirectory, "Assets", file);
+        private string AssetPath(string file) => System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", file);
 
         private void PlaySfx(MediaPlayer player, string file, double volume = 0.6)
         {
