@@ -1,11 +1,12 @@
-<Window x:Class="PRN212.G5.FlappyBird.LoginWindow"
+﻿<Window x:Class="PRN212.G5.FlappyBird.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Flappy Bird"
         Height="610"
         Width="1000"
         WindowStartupLocation="CenterScreen"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        Loaded="Window_Loaded">
 
     <Grid>
         <Image Source="/Assets/LoginPage.jpg"
