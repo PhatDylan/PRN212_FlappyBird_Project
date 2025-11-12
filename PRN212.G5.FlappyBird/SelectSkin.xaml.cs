@@ -34,7 +34,7 @@ namespace PRN212.G5.FlappyBird
                 Height = 250,
                 Margin = new Thickness(15),
                 CornerRadius = new CornerRadius(15),
-                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#34495E")),
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B2F2F")),
                 BorderThickness = new Thickness(4),
                 BorderBrush = skin.Id == SkinManager.SelectedSkinId
                     ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2ECC71"))
@@ -105,7 +105,7 @@ namespace PRN212.G5.FlappyBird
             {
                 var selectedBadge = new Border
                 {
-                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2ECC71")),
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B2F2F")),
                     CornerRadius = new CornerRadius(5),
                     Padding = new Thickness(8, 5, 8, 5),
                     HorizontalAlignment = HorizontalAlignment.Center
@@ -136,8 +136,8 @@ namespace PRN212.G5.FlappyBird
             // Hover effect
             card.MouseEnter += (s, e) =>
             {
-                card.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3498DB"));
-                card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3F5365"));
+                card.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B2F2F"));
+                card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B2F2F"));
             };
 
             card.MouseLeave += (s, e) =>
@@ -145,7 +145,7 @@ namespace PRN212.G5.FlappyBird
                 card.BorderBrush = skin.Id == SkinManager.SelectedSkinId
                     ? new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2ECC71"))
                     : new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7F8C8D"));
-                card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#34495E"));
+                card.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3B2F2F"));
             };
 
             return card;
@@ -158,12 +158,12 @@ namespace PRN212.G5.FlappyBird
 
         private void BackButton_MouseEnter(object sender, MouseEventArgs e)
         {
-            BackButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7F8C8D"));
+            BackButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D6B37C"));
         }
 
         private void BackButton_MouseLeave(object sender, MouseEventArgs e)
         {
-            BackButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#95A5A6"));
+            BackButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D6B37C"));
         }
     }
 }

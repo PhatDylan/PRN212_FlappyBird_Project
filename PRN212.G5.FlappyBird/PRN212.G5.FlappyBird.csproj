@@ -19,6 +19,7 @@
     <None Remove="Assets\Cloud-Day.png" />
     <None Remove="Assets\Cloud-Night.png" />
     <None Remove="Assets\DayStage.jpg" />
+    <None Remove="Assets\FlappyBirdTitle.png" />
     <None Remove="Assets\Kubbi - Up In My Jam ♫ NO COPYRIGHT 8-bit Music.mp3" />
     <None Remove="Assets\LoginPage.jpg" />
     <None Remove="Assets\NightStage.jpg" />
@@ -77,6 +78,9 @@
     </Resource>
     <Resource Include="Assets\DayGround.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\FlappyBirdTitle.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\LoginPage.jpg">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>

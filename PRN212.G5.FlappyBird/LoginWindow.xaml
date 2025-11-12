@@ -9,6 +9,21 @@
         Loaded="Window_Loaded">
 
     <Grid>
+        <Image x:Name="FlappyBird"
+                   Source="/Assets/birdfly-1.png"
+                   Canvas.Left="700" Canvas.Top="140"
+                   Panel.ZIndex="10"
+                   RenderTransformOrigin="0.691,0.562"
+                   RenderOptions.BitmapScalingMode="HighQuality" Margin="496,160,210,272">
+            <Image.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform Angle="0.767"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Image.RenderTransform>
+        </Image>
         <Image Source="/Assets/LoginPage.jpg"
                Stretch="UniformToFill" />
 
@@ -19,20 +34,20 @@
                     IsHitTestVisible="True"
                     Visibility="Visible">
 
-            <TextBlock Text="FlappyBird"
-                       FontSize="64"
-                       FontWeight="Black"
-                       Foreground="#2ECC71"
-                       HorizontalAlignment="Center"
-                       Margin="0,0,0,16"
-                       IsHitTestVisible="False">
-                <TextBlock.Effect>
+            <Image Source="pack://application:,,,/assets/FlappyBirdTitle.png"
+                    HorizontalAlignment="Center"
+                    Margin="0,0,0,16"
+                    IsHitTestVisible="False"
+                    Width="602"
+                    Height="231"
+                    Stretch="Uniform">
+                <Image.Effect>
                     <DropShadowEffect BlurRadius="6"
                                       ShadowDepth="0"
                                       Color="White"
                                       Opacity="0.95" />
-                </TextBlock.Effect>
-            </TextBlock>
+                </Image.Effect>
+            </Image>
 
             <Button x:Name="StartButton"
                     Width="240"
@@ -199,5 +214,6 @@
                 </Button>
             </StackPanel>
         </StackPanel>
+
     </Grid>
 </Window>
