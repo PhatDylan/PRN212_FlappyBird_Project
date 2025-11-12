@@ -1,11 +1,83 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Media;
-using System.IO;
 using PRN212.G5.FlappyBird.Views;
+using Path = System.IO.Path;
 
 namespace PRN212.G5.FlappyBird
 {
+    // Bird Skin Model
+    public class BirdSkin
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string DayFlyFrame { get; set; } = string.Empty;
+        public string DayFallFrame { get; set; } = string.Empty;
+        public string NightFlyFrame { get; set; } = string.Empty;
+        public string NightFallFrame { get; set; } = string.Empty;
+        public string PreviewImage { get; set; } = string.Empty;
+        public bool IsUnlocked { get; set; } = true;
+    }
+
+    // Static Skin Manager
+    public static class SkinManager
+    {
+        private static int selectedSkinId = 1;
+        
+        public static List<BirdSkin> AvailableSkins { get; } = new()
+        {
+            new BirdSkin
+            {
+                Id = 1,
+                Name = "Yellow",
+                DisplayName = "Classic Yellow Bird",
+                DayFlyFrame = "birdfly-1.png",
+                DayFallFrame = "birdfall-1.png",
+                NightFlyFrame = "birdfly-3.png",
+                NightFallFrame = "birdfall-3.png",
+                PreviewImage = "birdfly-1.png",
+                IsUnlocked = true
+            },
+            new BirdSkin
+            {
+                Id = 2,
+                Name = "Green",
+                DisplayName = "Green Bird",
+                DayFlyFrame = "birdfly-2.png",
+                DayFallFrame = "birdfall-2.png",
+                NightFlyFrame = "birdfly-2.png",
+                NightFallFrame = "birdfall-2.png",
+                PreviewImage = "birdfly-2.png",
+                IsUnlocked = true
+            },
+            new BirdSkin
+            {
+                Id = 3,
+                Name = "Purple",
+                DisplayName = "Purple Bird",
+                DayFlyFrame = "birdfly-3.png",
+                DayFallFrame = "birdfall-3.png",
+                NightFlyFrame = "birdfly-3.png",
+                NightFallFrame = "birdfall-3.png",
+                PreviewImage = "birdfly-3.png",
+                IsUnlocked = true
+            }
+        };
+
+        public static int SelectedSkinId
+        {
+            get => selectedSkinId;
+            set => selectedSkinId = value;
+        }
+
+        public static BirdSkin GetSelectedSkin()
+        {
+            return AvailableSkins.Find(s => s.Id == selectedSkinId) ?? AvailableSkins[0];
+        }
+    }
+
     public partial class LoginWindow : Window
     {
         private const double DefaultPipeSpeed = 5.0;
@@ -26,8 +98,6 @@ namespace PRN212.G5.FlappyBird
             InitializeComponent();
 
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
-
-            // Khởi tạo MediaPlayer      
         }
 
         private void PreloadBgm()
@@ -39,10 +109,10 @@ namespace PRN212.G5.FlappyBird
 
         private void InitializeMediaPlayer()
         {
-                mediaPlayer = new MediaPlayer();
-                mediaPlayer.MediaEnded += MediaPlayer_MediaEnded; 
-                string assetPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BGM.mp3");
-                mediaPlayer.Open(new Uri(assetPath));
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.MediaEnded += MediaPlayer_MediaEnded; 
+            string assetPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BGM.mp3");
+            mediaPlayer.Open(new Uri(assetPath));
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
@@ -101,7 +171,11 @@ namespace PRN212.G5.FlappyBird
 
         private void SkinsButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Skins clicked (TODO).", "Skins", MessageBoxButton.OK, MessageBoxImage.Information);
+            var skinWindow = new SelectSkin
+            {
+                Owner = this
+            };
+            skinWindow.ShowDialog();
         }
 
         protected override void OnClosed(EventArgs e)
