@@ -10,6 +10,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.IO;
+using FlappyBird.Business.Services;
+using FlappyBird.Business.Models;
 
 namespace PRN212.G5.FlappyBird.Views
 {
@@ -41,70 +43,52 @@ namespace PRN212.G5.FlappyBird.Views
         private int highScore = 0;
         private readonly Random rnd = new();
 
-        private sealed class PipePairState
+        // StageService để quản lý business logic
+        private readonly StageService stageService = new();
+
+        // UI Wrappers để map Business models với UI elements
+        private sealed class PipePairUI
         {
-            public PipePairState(Image top, Image bottom)
+            public PipePairUI(Image top, Image bottom, PipePairState state)
             {
                 Top = top;
                 Bottom = bottom;
+                State = state;
             }
 
             public Image Top { get; }
             public Image Bottom { get; }
-            public double BaseTopHeight { get; set; }
-            public double CurrentTopHeight { get; set; }
-            public double TargetTopHeight { get; set; }
-            public double MinTopHeight { get; set; }
-            public double MinBottomHeight { get; set; }
-            public double AnimationSpeed { get; set; }
-            public double TargetMovementSpeed { get; set; } // Tốc độ riêng cho target movement khi kết hợp với oscillation
-            public bool EnableVerticalAnimation { get; set; }
-            public bool IsMoving { get; set; }
-            public bool IsOscillating { get; set; } // true = lên xuống liên tục, false = di chuyển đến điểm rồi dừng
-            public bool HasTargetMovement { get; set; } // true = có target movement kết hợp với oscillation
-            public bool IsJumpPattern { get; set; } // true = pattern nhảy đột ngột (jump) - di chuyển nhanh rồi dừng
-            public double AnimationPhase { get; set; }
-            public double AnimationAmplitude { get; set; }
-            public double TargetStopX { get; set; } // Vị trí X khi target nên dừng (trước khi chim tới 1-2 ống)
-            public double FirstTargetHeight { get; set; } // Target đầu tiên (giảm sâu hoặc tăng cao)
-            public double SecondTargetHeight { get; set; } // Target thứ hai (ngược lại, về gần vị trí ban đầu)
-            public double JumpTargetHeight { get; set; } // Vị trí nhảy đến (cho jump pattern)
-            public int TargetMovementStage { get; set; } // 0 = chưa bắt đầu, 1 = di chuyển đến target 1, 2 = di chuyển đến target 2, 3 = dừng
-            public int AnimationDelayFrames { get; set; } // Số frame delay trước khi animation bắt đầu
-            public int AnimationFrameCount { get; set; } // Đếm số frame đã trôi qua
-            public int GroupId { get; set; } = -1; // ID của group (nếu là -1 thì không thuộc group nào)
-            public bool IsGroupLeader { get; set; } = false; // true nếu là pipe đầu tiên trong group
-            public int GroupIndex { get; set; } = 0; // Index trong group (0 = leader, 1, 2, 3...)
+            public PipePairState State { get; }
         }
 
-        private readonly List<PipePairState> pipePairs = new();
+        private sealed class NoTouchUI
+        {
+            public NoTouchUI(Image image, NoTouchState state)
+            {
+                Image = image;
+                State = state;
+            }
+
+            public Image Image { get; }
+            public NoTouchState State { get; }
+        }
+
+        private sealed class GateUI
+        {
+            public GateUI(Ellipse gate, GateState state)
+            {
+                Gate = gate;
+                State = state;
+            }
+
+            public Ellipse Gate { get; }
+            public GateState State { get; }
+        }
+
+        private readonly List<PipePairUI> pipePairs = new();
         private readonly List<Image> clouds = new();
-        private int nextGroupId = 0; // ID cho group pipes tiếp theo
-        private const double GroupPipeSpacing = 90; // Khoảng cách giữa các pipes trong group (nhỏ hơn PipeSpacing = 260)
-        
-        // NoTouch Obstacle State
-        private sealed class NoTouchState
-        {
-            public Image Image { get; set; } = null!;
-            public double BaseY { get; set; } // Vị trí Y gốc
-            public double CurrentY { get; set; } // Vị trí Y hiện tại
-            public bool IsOscillating { get; set; } // Có lên xuống không
-            public double OscillationAmplitude { get; set; } // Biên độ lên xuống
-            public double OscillationPhase { get; set; } // Phase cho sine wave
-            public double OscillationSpeed { get; set; } // Tốc độ oscillation
-            public double SpawnX { get; set; } // Vị trí X khi spawn để track
-        }
-        
-        // Gate State - Cổng để chuyển đổi ngày/đêm
-        private sealed class GateState
-        {
-            public Ellipse Gate { get; set; } = null!;
-            public double SpawnX { get; set; }
-            public bool IsActivated { get; set; } = false; // Đã kích hoạt chưa
-        }
-        
-        private readonly List<NoTouchState> noTouchObstacles = new();
-        private readonly List<GateState> gates = new();
+        private readonly List<NoTouchUI> noTouchObstacles = new();
+        private readonly List<GateUI> gates = new();
 
         private const double DefaultPipeSpeed = 5;
         private const double MinPipeSpeed = 3;
@@ -117,7 +101,6 @@ namespace PRN212.G5.FlappyBird.Views
 
         private bool isGameOver = false;
         private bool isPlaying = false;
-        private bool isNight = false;
         private int frameCount = 0; // Đếm frame để tối ưu collision detection
 
         private const double FirstPipeStartLeft = 1100;
@@ -129,10 +112,6 @@ namespace PRN212.G5.FlappyBird.Views
         private const int PipeWidth = 80;
 
         private bool isTransitioning = false;
-        private int totalPipesPassed = 0; // Đếm tổng số pipes đã qua để spawn NoTouch
-        private int nextNoTouchSpawnAt = -1; // Pipe số mấy sẽ spawn NoTouch tiếp theo (random)
-        private int lastSpawnedPhase = -1; // Phase cuối cùng đã spawn NoTouch để tránh spawn nhiều lần
-        private int noTouchSpawnCount = 0; // Đếm số lần đã spawn NoTouch (để tạo cổng sau mỗi 2 lần)
         private readonly MediaPlayer sfxJump = new();
         private readonly MediaPlayer sfxPoint = new();
         private readonly MediaPlayer sfxFail = new();
@@ -307,16 +286,13 @@ namespace PRN212.G5.FlappyBird.Views
 
             HighScoreText.Text = $"High Score: {highScore}";
 
+            // Reset StageService
+            stageService.Reset();
+
             ClearDynamicObjects();
+            
             CreateClouds();
             CreateInitialPipes(4);
-            
-            // Reset pipe counter và random spawn point
-            totalPipesPassed = 0;
-            nextNoTouchSpawnAt = -1;
-            lastSpawnedPhase = -1; // Reset phase tracking
-            nextGroupId = 0; // Reset group ID
-            noTouchSpawnCount = 0; // Reset NoTouch spawn counter
 
             graceTicksRemaining = StartGraceTicks;
 
@@ -332,6 +308,9 @@ namespace PRN212.G5.FlappyBird.Views
         private void ResetStageToDay(bool animate = false)
         {
             isTransitioning = false;
+
+            // Gọi StageService để reset về day mode (business logic)
+            stageService.ResetToDay();
 
             DayLayer.BeginAnimation(UIElement.OpacityProperty, null);
             NightLayer.BeginAnimation(UIElement.OpacityProperty, null);
@@ -354,21 +333,39 @@ namespace PRN212.G5.FlappyBird.Views
                     EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
                 };
 
+                var dayGroundAnim = new DoubleAnimation
+                {
+                    To = 1,
+                    Duration = dur,
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+
+                var nightGroundAnim = new DoubleAnimation
+                {
+                    To = 0,
+                    Duration = dur,
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+
                 dayAnim.Completed += (_, __) =>
                 {
-                    isNight = false;
+                    // StageService đã được reset trong ResetStageToDay()
                     UpdateDynamicAssets(false);
                     UseBirdFramesForTheme(false);
                 };
 
                 DayLayer.BeginAnimation(UIElement.OpacityProperty, dayAnim);
                 NightLayer.BeginAnimation(UIElement.OpacityProperty, nightAnim);
+                DayGround.BeginAnimation(UIElement.OpacityProperty, dayGroundAnim);
+                NightGround.BeginAnimation(UIElement.OpacityProperty, nightGroundAnim);
             }
             else
             {
                 DayLayer.Opacity = 1;
                 NightLayer.Opacity = 0;
-                isNight = false;
+                DayGround.Opacity = 1;
+                NightGround.Opacity = 0;
+                // StageService đã được reset trong ResetStageToDay()
                 UpdateDynamicAssets(false);
                 UseBirdFramesForTheme(false);
             }
@@ -477,7 +474,8 @@ namespace PRN212.G5.FlappyBird.Views
             if (isTransitioning) return;
             isTransitioning = true;
 
-            bool targetNight = !isNight;
+            // Gọi StageService để toggle day/night (business logic)
+            bool targetNight = stageService.ToggleDayNight();
             // Tăng duration lên 2.5 giây để chuyển đổi mượt mà hơn
             var dur = TimeSpan.FromSeconds(2.5);
 
@@ -496,6 +494,21 @@ namespace PRN212.G5.FlappyBird.Views
                 EasingFunction = new PowerEase { Power = 2, EasingMode = EasingMode.EaseInOut }
             };
 
+            // Animate ground opacity
+            var dayGroundAnim = new DoubleAnimation
+            {
+                To = targetNight ? 0 : 1,
+                Duration = dur,
+                EasingFunction = new PowerEase { Power = 2, EasingMode = EasingMode.EaseInOut }
+            };
+
+            var nightGroundAnim = new DoubleAnimation
+            {
+                To = targetNight ? 1 : 0,
+                Duration = dur,
+                EasingFunction = new PowerEase { Power = 2, EasingMode = EasingMode.EaseInOut }
+            };
+
             // Update assets ở giữa quá trình chuyển đổi (50%) và đảm bảo pipes mới cũng đúng màu
             // Dùng DispatcherTimer với interval lớn hơn để tối ưu
             bool assetsUpdated = false;
@@ -504,8 +517,8 @@ namespace PRN212.G5.FlappyBird.Views
                 Interval = TimeSpan.FromSeconds(dur.TotalSeconds * 0.5) // Update ở 50%
             };
             
-            // Update isNight ngay lập tức để pipes mới được tạo sẽ dùng màu đúng
-            isNight = targetNight;
+            // Update assets ngay lập tức để pipes mới được tạo sẽ dùng màu đúng
+            // (StageService đã được update trong ToggleDayNight())
             
             updateTimer.Tick += (_, __) =>
             {
@@ -519,12 +532,15 @@ namespace PRN212.G5.FlappyBird.Views
             };
             updateTimer.Start();
             
+            // Animate ground
+            DayGround.BeginAnimation(UIElement.OpacityProperty, dayGroundAnim);
+            NightGround.BeginAnimation(UIElement.OpacityProperty, nightGroundAnim);
+            
             dayAnim.Completed += (_, __) =>
             {
                 updateTimer.Stop();
                 isTransitioning = false;
-                // Đảm bảo isNight đã được set và update lại tất cả assets một lần nữa
-                isNight = targetNight;
+                // Update lại tất cả assets một lần nữa
                 UpdateDynamicAssets(targetNight);
                 UseBirdFramesForTheme(targetNight);
             };
@@ -538,10 +554,14 @@ namespace PRN212.G5.FlappyBird.Views
             string pipeFile = night ? "Pipe-night.png" : "Pipe-day.png";
             string cloudFile = night ? "Cloud-Night.png" : "Cloud-Day.png";
 
+            // Update tất cả pipes hiện có (bao gồm cả pipes trong group)
             foreach (var pair in pipePairs)
             {
-                pair.Top.Source = new BitmapImage(new Uri(Pack(pipeFile)));
-                pair.Bottom.Source = new BitmapImage(new Uri(Pack(pipeFile)));
+                if (pair.Top != null && pair.Bottom != null)
+                {
+                    pair.Top.Source = new BitmapImage(new Uri(Pack(pipeFile)));
+                    pair.Bottom.Source = new BitmapImage(new Uri(Pack(pipeFile)));
+                }
             }
             foreach (var cloud in clouds)
                 cloud.Source = new BitmapImage(new Uri(Pack(cloudFile)));
@@ -573,7 +593,7 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void CreateClouds()
         {
-            string cloudFile = isNight ? "Cloud-Night.png" : "Cloud-Day.png";
+            string cloudFile = stageService.IsNight ? "Cloud-Night.png" : "Cloud-Day.png";
             for (int i = 0; i < 4; i++)
             {
                 var cloud = new Image
@@ -594,9 +614,14 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void SpawnNoTouchGroup(int count, double startX)
         {
-            // Spawn một nhóm NoTouch sau pipes
-            for (int i = 0; i < count; i++)
+            // Sử dụng StageService để spawn NoTouch
+            int beforeCount = stageService.NoTouchObstacles.Count;
+            stageService.SpawnNoTouchGroup(count, startX);
+            
+            // Tạo UI elements cho các NoTouch mới
+            for (int i = beforeCount; i < stageService.NoTouchObstacles.Count; i++)
             {
+                var state = stageService.NoTouchObstacles[i];
                 try
                 {
                     string imagePath = Pack("NoTouch.png");
@@ -618,106 +643,88 @@ namespace PRN212.G5.FlappyBird.Views
                     RenderOptions.SetBitmapScalingMode(obstacle, BitmapScalingMode.HighQuality);
                     GameCanvas.Children.Add(obstacle);
                     
-                    // Spawn cách nhau 150px để tránh chồng lấn
-                    double spawnX = startX + (i * 150);
-                    double spawnY = rnd.Next(80, CanvasHeight - 120);
-                    
-                    Canvas.SetLeft(obstacle, spawnX);
-                    Canvas.SetTop(obstacle, spawnY);
+                    Canvas.SetLeft(obstacle, state.X);
+                    Canvas.SetTop(obstacle, state.CurrentY);
                     Panel.SetZIndex(obstacle, 15);
                     
-                    // Tạo state với animation
-                    var state = new NoTouchState
-                    {
-                        Image = obstacle,
-                        BaseY = spawnY,
-                        CurrentY = spawnY,
-                        IsOscillating = rnd.NextDouble() < 0.6, // 60% có animation
-                        OscillationAmplitude = rnd.Next(25, 50), // Biên độ 25-50px
-                        OscillationPhase = rnd.NextDouble() * Math.PI * 2, // Random phase
-                        OscillationSpeed = 0.03 + rnd.NextDouble() * 0.02, // Tốc độ 0.03-0.05
-                        SpawnX = spawnX // Lưu vị trí spawn để track
-                    };
-                    
-                    noTouchObstacles.Add(state);
+                    noTouchObstacles.Add(new NoTouchUI(obstacle, state));
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[NoTouch] ERROR: {ex.Message}");
+                    // Error creating NoTouch
                 }
             }
             
-            // Tăng counter sau khi spawn NoTouch
-            noTouchSpawnCount++;
-            
-            // Chỉ tạo cổng ở lần thứ 2 (sau 1 lần spawn NoTouch)
-            // Lần 1: noTouchSpawnCount = 1, không có cổng
-            // Lần 2: noTouchSpawnCount = 2, có cổng, reset về 0
-            if (noTouchSpawnCount >= 2)
+            // Kiểm tra xem có gate mới được tạo không
+            if (stageService.Gates.Count > gates.Count)
             {
-                // Tạo cổng (gate) khi spawn NoTouch - đặt ở giữa màn hình
-                CreateGate(startX + (count * 150) + 200); // Đặt cổng sau nhóm NoTouch
-                noTouchSpawnCount = 0; // Reset counter
+                var newGateState = stageService.Gates[stageService.Gates.Count - 1];
+                CreateGateUI(newGateState);
             }
         }
         
-        private void CreateGate(double gateX)
+        private void CreateGateUI(GateState gateState)
         {
             try
             {
-                // Tạo cổng hình tròn - ban ngày màu đêm (tối), ban đêm màu ban ngày (sáng)
-                // Ban ngày: màu tối (DarkBlue, DarkPurple) để nổi bật trên nền sáng
-                // Ban đêm: màu sáng (Yellow, Gold) để nổi bật trên nền tối
-                Color gateColor = isNight ? Colors.Gold : Colors.DarkBlue;
+                Color gateColor = stageService.IsNight ? Colors.Gold : Colors.DarkBlue;
                 
                 var gate = new Ellipse
                 {
-                    Width = 80, // Kích thước 80x80
-                    Height = 80, // Hình tròn
+                    Width = 80,
+                    Height = 80,
                     Fill = new SolidColorBrush(gateColor),
                     Opacity = 0.9,
                     Stroke = new SolidColorBrush(Colors.White),
                     StrokeThickness = 2
                 };
                 
-                // Tắt animation nhấp nháy để giảm lag - chỉ dùng opacity cố định
-                // Không dùng animation để tránh lag khi gần cổng
-                
-                // Tối ưu rendering
                 RenderOptions.SetBitmapScalingMode(gate, BitmapScalingMode.LowQuality);
                 RenderOptions.SetEdgeMode(gate, EdgeMode.Aliased);
                 
                 GameCanvas.Children.Add(gate);
-                Canvas.SetLeft(gate, gateX);
-                Canvas.SetTop(gate, (CanvasHeight - 80) / 2); // Ở giữa màn hình theo chiều dọc
-                Panel.SetZIndex(gate, 20); // Cao hơn NoTouch
+                Canvas.SetLeft(gate, gateState.X);
+                Canvas.SetTop(gate, gateState.Y);
+                Panel.SetZIndex(gate, 20);
                 
-                var gateState = new GateState
-                {
-                    Gate = gate,
-                    SpawnX = gateX,
-                    IsActivated = false
-                };
-                
-                gates.Add(gateState);
+                gates.Add(new GateUI(gate, gateState));
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[Gate] ERROR: {ex.Message}");
+                // Error creating Gate
             }
         }
 
         private void CreateInitialPipes(int count)
         {
+            // Tạo pipes trực tiếp như code cũ, nhưng sử dụng StageService để quản lý state
             for (int i = 0; i < count; i++)
             {
-                CreatePipePair(FirstPipeStartLeft + i * PipeSpacing);
+                double leftPos = stageService.GetFirstPipeStartLeft() + (i * stageService.GetPipeSpacing());
+                CreatePipePair(leftPos);
             }
         }
 
         private void CreatePipePair(double leftPos)
         {
-            string pipeFile = isNight ? "Pipe-night.png" : "Pipe-day.png";
+            var pairState = stageService.CreatePipePair(leftPos, score);
+            CreatePipeUI(pairState);
+        }
+
+        private void CreatePipeUI(PipePairState pairState)
+        {
+            string pipeFile = stageService.IsNight ? "Pipe-night.png" : "Pipe-day.png";
+
+            // Đảm bảo các giá trị được set đúng TRƯỚC khi tạo UI
+            if (pairState.MinTopHeight == 0) pairState.MinTopHeight = 100;
+            if (pairState.MinBottomHeight == 0) pairState.MinBottomHeight = 100;
+            if (pairState.CurrentTopHeight == 0)
+            {
+                if (pairState.BaseTopHeight > 0)
+                    pairState.CurrentTopHeight = pairState.BaseTopHeight;
+                else
+                    pairState.CurrentTopHeight = 200; // Default height
+            }
 
             var top = new Image
             {
@@ -726,545 +733,104 @@ namespace PRN212.G5.FlappyBird.Views
                 Source = new BitmapImage(new Uri(Pack(pipeFile))),
                 SnapsToDevicePixels = true,
                 RenderTransformOrigin = new Point(0.5, 0.5),
-                RenderTransform = new ScaleTransform { ScaleY = -1 }
+                RenderTransform = new ScaleTransform { ScaleY = -1 },
+                Visibility = Visibility.Visible
             };
             var bottom = new Image
             {
                 Width = PipeWidth,
                 Stretch = Stretch.Fill,
                 Source = new BitmapImage(new Uri(Pack(pipeFile))),
-                SnapsToDevicePixels = true
+                SnapsToDevicePixels = true,
+                Visibility = Visibility.Visible
             };
 
+            // Set Z-index
+            Panel.SetZIndex(top, 3);
+            Panel.SetZIndex(bottom, 3);
+
+            // Thêm vào Canvas TRƯỚC
             GameCanvas.Children.Add(top);
             GameCanvas.Children.Add(bottom);
-            Canvas.SetLeft(top, leftPos);
-            Canvas.SetLeft(bottom, leftPos);
-
-            var pairState = new PipePairState(top, bottom);
-            RandomizePipe(pairState);
-            pipePairs.Add(pairState);
+            
+            // Set X position
+            Canvas.SetLeft(top, pairState.X);
+            Canvas.SetLeft(bottom, pairState.X);
+            
+            // Apply geometry SAU khi đã thêm vào Canvas (sẽ set Top và Height)
+            ApplyPipeGeometry(pairState, top, bottom);
+            
+            pipePairs.Add(new PipePairUI(top, bottom, pairState));
         }
 
-        private void RandomizePipe(PipePairState pair)
+        private void SyncPipesFromService()
         {
-            int minTopHeight = 100;
-            int minBottomHeight = 100;
-            int maxTopHeight = 590 - gap - minBottomHeight;
-            
-            double baseTopHeight = rnd.Next(minTopHeight, maxTopHeight + 1);
+            // Remove old UI pipes
+            foreach (var pair in pipePairs)
+            {
+                if (pair.Top != null && GameCanvas.Children.Contains(pair.Top))
+                    GameCanvas.Children.Remove(pair.Top);
+                if (pair.Bottom != null && GameCanvas.Children.Contains(pair.Bottom))
+                    GameCanvas.Children.Remove(pair.Bottom);
+            }
+            pipePairs.Clear();
 
-            // Pattern variations: biased top/bottom gaps
-            double patternRoll = rnd.NextDouble();
-            if (patternRoll < 0.15)
+            // Create UI pipes from StageService
+            foreach (var pairState in stageService.PipePairs)
             {
-                baseTopHeight = minTopHeight + rnd.Next(0, Math.Max(1, 40));
-            }
-            else if (patternRoll < 0.30)
-            {
-                baseTopHeight = maxTopHeight - rnd.Next(0, Math.Max(1, 40));
-            }
-
-            pair.BaseTopHeight = baseTopHeight;
-            pair.CurrentTopHeight = baseTopHeight;
-
-            // Chỉ có animation khi score >= 10
-            bool enableAnimation = false;
-            double animationChance = 0.0;
-            
-            if (score >= 40)
-            {
-                animationChance = 0.80; // 80% cột có animation
-            }
-            else if (score >= 30)
-            {
-                animationChance = 0.80; // 80% cột có animation
-            }
-            else if (score >= 20)
-            {
-                animationChance = 0.65; // 65% cột có animation
-            }
-            else if (score >= 10)
-            {
-                animationChance = 0.50; // 50% cột có animation
-            }
-            
-            enableAnimation = rnd.NextDouble() < animationChance;
-            
-            if (enableAnimation)
-            {
-                double maxAmplitude = Math.Max(0, Math.Min(baseTopHeight - minTopHeight, maxTopHeight - baseTopHeight));
-                
-                // Điều chỉnh amplitude dựa trên score
-                double baseAmplitude = score >= 40 ? 140 : score >= 30 ? 130 : score >= 20 ? 120 : 100;
-                double amplitudeRange = score >= 40 ? 70 : score >= 30 ? 65 : score >= 20 ? 60 : 50;
-                double desiredAmplitude = baseAmplitude + rnd.NextDouble() * amplitudeRange;
-                double amplitude = maxAmplitude > 0 ? Math.Min(desiredAmplitude, maxAmplitude) : 0;
-                
-                // Quyết định loại animation theo score
-                double oscillationChance = 0.0;
-                if (score >= 40)
+                if (pairState != null)
                 {
-                    oscillationChance = 0.80; // 80% oscillation
-                }
-                else if (score >= 30)
-                {
-                    oscillationChance = 0.80; // 80% oscillation
-                }
-                else if (score >= 20)
-                {
-                    oscillationChance = 0.65; // 65% oscillation
-                }
-                else if (score >= 10)
-                {
-                    oscillationChance = 0.50; // 50% oscillation, 50% target
-                }
-                
-                bool useOscillation = rnd.NextDouble() < oscillationChance;
-                bool useTarget = !useOscillation || (score >= 20 && rnd.NextDouble() < 0.4); // Từ 20 trở đi có thể kết hợp
-                
-                // Quyết định có dùng jump pattern không (từ score 20 trở đi)
-                bool useJumpPattern = false;
-                if (score >= 20 && !useOscillation && useTarget)
-                {
-                    useJumpPattern = rnd.NextDouble() < 0.3; // 30% cơ hội dùng jump pattern
-                }
-                
-                // Delay trước khi animation bắt đầu (từ score 20 trở đi)
-                int delayFrames = 0;
-                if (score >= 20 && rnd.NextDouble() < 0.25) // 25% cơ hội có delay
-                {
-                    delayFrames = rnd.Next(10, 40); // Delay 10-40 frames
-                }
-                pair.AnimationDelayFrames = delayFrames;
-                pair.AnimationFrameCount = 0;
-                
-                if (useOscillation && amplitude > 20)
-                {
-                    // Lên xuống liên tục (oscillation)
-                    pair.IsOscillating = true;
-                    pair.AnimationAmplitude = amplitude;
-                    pair.AnimationPhase = rnd.NextDouble() * Math.PI * 2;
-                    // Tốc độ oscillation không bị ảnh hưởng bởi tốc độ game
-                    double oscSpeed = score >= 40 ? 0.05 + rnd.NextDouble() * 0.02 : 
-                                     score >= 30 ? 0.04 + rnd.NextDouble() * 0.02 :
-                                     score >= 20 ? 0.04 + rnd.NextDouble() * 0.02 : 0.03 + rnd.NextDouble() * 0.02;
-                    pair.AnimationSpeed = oscSpeed;
-                    pair.EnableVerticalAnimation = true;
-                    pair.IsMoving = false;
-                    pair.HasTargetMovement = useTarget && score >= 20;
-                    
-                    // Nếu kết hợp với target
-                    if (pair.HasTargetMovement)
-                    {
-                        // Tăng amplitude để target di chuyển xa hơn, dài hơn
-                        double moveAmplitude = amplitude * 1.8; // Tăng lên để di chuyển xa hơn
-                        moveAmplitude = Math.Min(moveAmplitude, maxAmplitude);
-                        bool moveUp = rnd.NextDouble() < 0.5;
-                        double targetOffset = moveUp ? -moveAmplitude : moveAmplitude;
-                        pair.TargetTopHeight = Math.Clamp(baseTopHeight + targetOffset, minTopHeight, maxTopHeight);
-                        pair.IsMoving = true;
-                        // Tăng tốc độ animation để target kịp di chuyển xa hơn (dùng TargetMovementSpeed riêng)
-                        // Tốc độ tăng theo score để linh hoạt hơn khi game nhanh
-                        double baseSpeed = 0.5;
-                        double speedMultiplier = 1.0 + (score * 0.01); // Tăng tốc độ theo score
-                        double moveSpeed = (baseSpeed + rnd.NextDouble() * 0.25) * Math.Min(speedMultiplier, 1.4);
-                        pair.TargetMovementSpeed = moveSpeed;
-                        // Tính vị trí X khi target nên dừng (trước chim 1 cột)
-                        double pipeX = Canvas.GetLeft(pair.Top);
-                        double birdX = 70; // Vị trí X của chim
-                        pair.TargetStopX = birdX + PipeSpacing * 1.0;
-                    }
-                }
-                else if (useTarget)
-                {
-                    pair.IsOscillating = false;
-                    pair.HasTargetMovement = false;
-                    
-                    if (useJumpPattern)
-                    {
-                        // Jump pattern: Nhảy đột ngột với tốc độ rất nhanh rồi dừng ngay
-                        pair.IsJumpPattern = true;
-                        double jumpAmplitude = Math.Min(amplitude * 2.0, maxAmplitude);
-                        
-                        bool jumpUp = rnd.NextDouble() < 0.5;
-                        double jumpOffset = jumpUp ? -jumpAmplitude : jumpAmplitude;
-                        double jumpHeight = Math.Clamp(baseTopHeight + jumpOffset, minTopHeight, maxTopHeight);
-                        
-                        pair.JumpTargetHeight = jumpHeight;
-                        pair.TargetTopHeight = jumpHeight;
-                        pair.TargetMovementStage = 1;
-                        
-                        // Tốc độ rất nhanh cho jump pattern
-                        double jumpSpeed = 1.5 + rnd.NextDouble() * 0.8; // 1.5-2.3 pixel/frame
-                        pair.AnimationSpeed = jumpSpeed;
-                        pair.EnableVerticalAnimation = true;
-                        pair.IsMoving = true;
-                        
-                        double pipeX = Canvas.GetLeft(pair.Top);
-                        double birdX = 70;
-                        pair.TargetStopX = birdX + PipeSpacing * 1.0;
-                    }
-                    else
-                    {
-                        // Target movement đơn giản: di chuyển đến một điểm với amplitude lớn rồi dừng
-                        pair.IsJumpPattern = false;
-                        double moveAmplitude = Math.Min(amplitude * 2.5, maxAmplitude); // Amplitude lớn để dễ thấy
-                        
-                        bool moveUp = rnd.NextDouble() < 0.5;
-                        double targetOffset = moveUp ? -moveAmplitude : moveAmplitude;
-                        double targetHeight = Math.Clamp(baseTopHeight + targetOffset, minTopHeight, maxTopHeight);
-                        
-                        pair.TargetTopHeight = targetHeight;
-                        pair.TargetMovementStage = 1; // Đang di chuyển đến target
-                        
-                        // Tốc độ tăng theo score để linh hoạt hơn khi game nhanh
-                        double baseSpeed = 0.7;
-                        double speedMultiplier = 1.0 + (score * 0.01);
-                        double moveSpeed = (baseSpeed + rnd.NextDouble() * 0.3) * Math.Min(speedMultiplier, 1.5);
-                        pair.AnimationSpeed = moveSpeed;
-                        pair.EnableVerticalAnimation = true;
-                        pair.IsMoving = true;
-                        
-                        // Tính vị trí X khi target nên dừng (trước chim 1 cột)
-                        double pipeX = Canvas.GetLeft(pair.Top);
-                        double birdX = 70;
-                        pair.TargetStopX = birdX + PipeSpacing * 1.0;
-                    }
+                    CreatePipeUI(pairState);
                 }
             }
-            else
-            {
-                pair.TargetTopHeight = baseTopHeight;
-                pair.AnimationSpeed = 0;
-                pair.EnableVerticalAnimation = false;
-                pair.IsMoving = false;
-                pair.IsOscillating = false;
-                pair.HasTargetMovement = false;
-                pair.IsJumpPattern = false;
-                pair.FirstTargetHeight = baseTopHeight;
-                pair.SecondTargetHeight = baseTopHeight;
-                pair.TargetMovementStage = 0;
-                pair.AnimationDelayFrames = 0;
-                pair.AnimationFrameCount = 0;
-            }
-
-            pair.MinTopHeight = minTopHeight;
-            pair.MinBottomHeight = minBottomHeight;
-
-            ApplyPipeGeometry(pair, pair.CurrentTopHeight);
         }
 
-        // Hàm chỉ random animation properties, KHÔNG thay đổi height
-        private void RandomizePipeAnimationOnly(PipePairState pair)
+        // Methods RandomizePipe và RandomizePipeAnimationOnly đã được chuyển vào StageService
+
+        private void ApplyPipeGeometry(PipePairState pairState, Image top, Image bottom)
         {
-            // Giữ nguyên BaseTopHeight và CurrentTopHeight đã được set
-            double baseTopHeight = pair.BaseTopHeight;
-            int minTopHeight = (int)pair.MinTopHeight;
-            int minBottomHeight = (int)pair.MinBottomHeight;
-            int maxTopHeight = 590 - (int)gap - minBottomHeight;
-            
-            // Chỉ có animation khi score >= 10
-            bool enableAnimation = false;
-            double animationChance = 0.0;
-            
-            if (score >= 40)
+            // Đảm bảo các giá trị được set đúng
+            if (pairState.MinTopHeight == 0) pairState.MinTopHeight = 100;
+            if (pairState.MinBottomHeight == 0) pairState.MinBottomHeight = 100;
+            if (pairState.CurrentTopHeight == 0) 
             {
-                animationChance = 0.80;
-            }
-            else if (score >= 30)
-            {
-                animationChance = 0.80;
-            }
-            else if (score >= 20)
-            {
-                animationChance = 0.65;
-            }
-            else if (score >= 10)
-            {
-                animationChance = 0.50;
-            }
-            
-            enableAnimation = rnd.NextDouble() < animationChance;
-            
-            if (enableAnimation)
-            {
-                double maxAmplitude = Math.Max(0, Math.Min(baseTopHeight - minTopHeight, maxTopHeight - baseTopHeight));
-                
-                double baseAmplitude = score >= 40 ? 140 : score >= 30 ? 130 : score >= 20 ? 120 : 100;
-                double amplitudeRange = score >= 40 ? 70 : score >= 30 ? 65 : score >= 20 ? 60 : 50;
-                double desiredAmplitude = baseAmplitude + rnd.NextDouble() * amplitudeRange;
-                double amplitude = maxAmplitude > 0 ? Math.Min(desiredAmplitude, maxAmplitude) : 0;
-                
-                double oscillationChance = 0.0;
-                if (score >= 40)
-                {
-                    oscillationChance = 0.80;
-                }
-                else if (score >= 30)
-                {
-                    oscillationChance = 0.80;
-                }
-                else if (score >= 20)
-                {
-                    oscillationChance = 0.65;
-                }
-                else if (score >= 10)
-                {
-                    oscillationChance = 0.50;
-                }
-                
-                bool useOscillation = rnd.NextDouble() < oscillationChance;
-                bool useTarget = !useOscillation || (score >= 20 && rnd.NextDouble() < 0.4);
-                
-                bool useJumpPattern = false;
-                if (score >= 20 && !useOscillation && useTarget)
-                {
-                    useJumpPattern = rnd.NextDouble() < 0.3;
-                }
-                
-                int delayFrames = 0;
-                if (score >= 20 && rnd.NextDouble() < 0.25)
-                {
-                    delayFrames = rnd.Next(10, 40);
-                }
-                pair.AnimationDelayFrames = delayFrames;
-                pair.AnimationFrameCount = 0;
-                
-                if (useOscillation && amplitude > 20)
-                {
-                    pair.IsOscillating = true;
-                    pair.AnimationAmplitude = amplitude;
-                    pair.AnimationPhase = rnd.NextDouble() * Math.PI * 2;
-                    double oscSpeed = score >= 40 ? 0.05 + rnd.NextDouble() * 0.02 : 
-                                     score >= 30 ? 0.04 + rnd.NextDouble() * 0.02 :
-                                     score >= 20 ? 0.04 + rnd.NextDouble() * 0.02 : 0.03 + rnd.NextDouble() * 0.02;
-                    pair.AnimationSpeed = oscSpeed;
-                    pair.EnableVerticalAnimation = true;
-                    pair.IsMoving = false;
-                    pair.HasTargetMovement = useTarget && score >= 20;
-                    
-                    if (pair.HasTargetMovement)
-                    {
-                        double moveAmplitude = amplitude * 1.8;
-                        moveAmplitude = Math.Min(moveAmplitude, maxAmplitude);
-                        bool moveUp = rnd.NextDouble() < 0.5;
-                        double targetOffset = moveUp ? -moveAmplitude : moveAmplitude;
-                        pair.TargetTopHeight = Math.Clamp(baseTopHeight + targetOffset, minTopHeight, maxTopHeight);
-                        pair.IsMoving = true;
-                        double baseSpeed = 0.5;
-                        double speedMultiplier = 1.0 + (score * 0.01);
-                        double moveSpeed = (baseSpeed + rnd.NextDouble() * 0.25) * Math.Min(speedMultiplier, 1.4);
-                        pair.TargetMovementSpeed = moveSpeed;
-                        double pipeX = Canvas.GetLeft(pair.Top);
-                        double birdX = 70;
-                        pair.TargetStopX = birdX + PipeSpacing * 1.0;
-                    }
-                }
-                else if (useTarget)
-                {
-                    pair.IsOscillating = false;
-                    pair.HasTargetMovement = false;
-                    
-                    if (useJumpPattern)
-                    {
-                        pair.IsJumpPattern = true;
-                        double jumpAmplitude = Math.Min(amplitude * 2.0, maxAmplitude);
-                        bool jumpUp = rnd.NextDouble() < 0.5;
-                        double jumpOffset = jumpUp ? -jumpAmplitude : jumpAmplitude;
-                        double jumpHeight = Math.Clamp(baseTopHeight + jumpOffset, minTopHeight, maxTopHeight);
-                        pair.JumpTargetHeight = jumpHeight;
-                        pair.TargetTopHeight = jumpHeight;
-                        pair.TargetMovementStage = 1;
-                        double baseSpeed = 2.0;
-                        double speedMultiplier = 1.0 + (score * 0.01);
-                        double jumpSpeed = (baseSpeed + rnd.NextDouble() * 0.5) * Math.Min(speedMultiplier, 1.5);
-                        pair.TargetMovementSpeed = jumpSpeed;
-                        pair.EnableVerticalAnimation = true;
-                        pair.IsMoving = true;
-                    }
-                    else
-                    {
-                        pair.IsJumpPattern = false;
-                        double moveAmplitude = amplitude * 2.5;
-                        moveAmplitude = Math.Min(moveAmplitude, maxAmplitude);
-                        bool moveUp = rnd.NextDouble() < 0.5;
-                        double targetOffset = moveUp ? -moveAmplitude : moveAmplitude;
-                        pair.TargetTopHeight = Math.Clamp(baseTopHeight + targetOffset, minTopHeight, maxTopHeight);
-                        pair.IsMoving = true;
-                        double baseSpeed = 0.5;
-                        double speedMultiplier = 1.0 + (score * 0.01);
-                        double moveSpeed = (baseSpeed + rnd.NextDouble() * 0.25) * Math.Min(speedMultiplier, 1.4);
-                        pair.TargetMovementSpeed = moveSpeed;
-                        double pipeX = Canvas.GetLeft(pair.Top);
-                        double birdX = 70;
-                        pair.TargetStopX = birdX + PipeSpacing * 1.0;
-                        pair.EnableVerticalAnimation = true;
-                        pair.HasTargetMovement = true;
-                    }
-                }
+                if (pairState.BaseTopHeight > 0)
+                    pairState.CurrentTopHeight = pairState.BaseTopHeight;
                 else
-                {
-                    pair.EnableVerticalAnimation = false;
-                    pair.IsOscillating = false;
-                    pair.IsMoving = false;
-                    pair.HasTargetMovement = false;
-                    pair.IsJumpPattern = false;
-                }
+                    pairState.CurrentTopHeight = 200; // Default
             }
-            else
-            {
-                pair.EnableVerticalAnimation = false;
-                pair.IsOscillating = false;
-                pair.IsMoving = false;
-                pair.HasTargetMovement = false;
-                pair.IsJumpPattern = false;
-                pair.AnimationDelayFrames = 0;
-                pair.AnimationFrameCount = 0;
-            }
-        }
+            
+            double maxTopHeight = CanvasHeight - gap - pairState.MinBottomHeight;
+            double clampedTopHeight = Math.Clamp(pairState.CurrentTopHeight, pairState.MinTopHeight, maxTopHeight);
 
-        private void ApplyPipeGeometry(PipePairState pair, double desiredTopHeight)
-        {
-            double clampedTopHeight = Math.Clamp(desiredTopHeight, pair.MinTopHeight, 590 - gap - pair.MinBottomHeight);
+            // Đảm bảo height > 0
+            if (clampedTopHeight <= 0) clampedTopHeight = 100;
 
-            pair.Top.Height = clampedTopHeight;
-            Canvas.SetTop(pair.Top, 0);
+            top.Height = clampedTopHeight;
+            Canvas.SetTop(top, 0);
 
             double bottomTop = clampedTopHeight + gap;
-            double bottomHeight = 590 - bottomTop;
-            pair.Bottom.Height = bottomHeight;
-            Canvas.SetTop(pair.Bottom, bottomTop);
+            double bottomHeight = CanvasHeight - bottomTop;
+            
+            // Đảm bảo bottom height > 0
+            if (bottomHeight <= 0) bottomHeight = 100;
+            
+            bottom.Height = bottomHeight;
+            Canvas.SetTop(bottom, bottomTop);
 
-            Panel.SetZIndex(pair.Top, 3);
-            Panel.SetZIndex(pair.Bottom, 3);
+            Panel.SetZIndex(top, 3);
+            Panel.SetZIndex(bottom, 3);
         }
 
-        private void ApplyPipeAnimation(PipePairState pair)
+        private void ApplyPipeAnimation(PipePairUI pairUI)
         {
-            // Mỗi pipe trong group có animation riêng, không cần follow leader
-            if (!pair.EnableVerticalAnimation)
-            {
-                ApplyPipeGeometry(pair, pair.CurrentTopHeight);
-                return;
-            }
-
-            // Kiểm tra delay trước khi animation bắt đầu
-            if (pair.AnimationFrameCount < pair.AnimationDelayFrames)
-            {
-                pair.AnimationFrameCount++;
-                ApplyPipeGeometry(pair, pair.CurrentTopHeight);
-                return;
-            }
-
-            double pipeX = Canvas.GetLeft(pair.Top);
-            double targetOffset = 0;
-
-            if (pair.IsOscillating)
-            {
-                // Lên xuống liên tục (oscillation)
-                pair.AnimationPhase += pair.AnimationSpeed;
-                if (pair.AnimationPhase > Math.PI * 2)
-                {
-                    pair.AnimationPhase -= Math.PI * 2;
-                }
-                
-                double oscOffset = Math.Sin(pair.AnimationPhase) * pair.AnimationAmplitude;
-                targetOffset = oscOffset;
-                
-                // Nếu có kết hợp với target movement
-                if (pair.HasTargetMovement && pair.IsMoving)
-                {
-                    // Kiểm tra xem có nên dừng target không (khi cột đến TargetStopX)
-                    if (pipeX <= pair.TargetStopX)
-                    {
-                        // Dừng target movement, chỉ giữ oscillation
-                        pair.IsMoving = false;
-                        pair.BaseTopHeight = pair.CurrentTopHeight - oscOffset; // Cập nhật base để oscillation tiếp tục từ vị trí hiện tại
-                    }
-                    else
-                    {
-                        // Tiếp tục di chuyển target (dùng TargetMovementSpeed riêng)
-                        double distance = pair.TargetTopHeight - pair.BaseTopHeight;
-                        double moveSpeed = pair.HasTargetMovement ? pair.TargetMovementSpeed : pair.AnimationSpeed;
-                        double moveStep = moveSpeed * Math.Sign(distance);
-                        
-                        if (Math.Abs(distance) <= Math.Abs(moveStep))
-                        {
-                            // Đã đến target, dừng target movement
-                            pair.BaseTopHeight = pair.TargetTopHeight;
-                            pair.IsMoving = false;
-                        }
-                        else
-                        {
-                            // Tiếp tục di chuyển base height
-                            pair.BaseTopHeight += moveStep;
-                        }
-                    }
-                }
-                
-                pair.CurrentTopHeight = pair.BaseTopHeight + targetOffset;
-            }
-            else if (pair.IsMoving)
-            {
-                // Chỉ có target movement (không oscillation)
-                // Kiểm tra xem có nên dừng target không (khi cột đến TargetStopX)
-                if (pipeX <= pair.TargetStopX)
-                {
-                    // Dừng lại trước khi chim tới
-                    pair.IsMoving = false;
-                    pair.TargetMovementStage = 3; // Dừng
-                }
-                else
-                {
-                    if (pair.IsJumpPattern)
-                    {
-                        // Jump pattern: Nhảy đột ngột với tốc độ rất nhanh
-                        double distance = pair.JumpTargetHeight - pair.CurrentTopHeight;
-                        double moveStep = pair.AnimationSpeed * Math.Sign(distance);
-                        
-                        if (Math.Abs(distance) <= Math.Abs(moveStep))
-                        {
-                            // Đã đến target, dừng ngay (jump pattern dừng ngay khi đến)
-                            pair.CurrentTopHeight = pair.JumpTargetHeight;
-                            pair.IsMoving = false;
-                            pair.TargetMovementStage = 3; // Dừng
-                        }
-                        else
-                        {
-                            // Tiếp tục nhảy với tốc độ nhanh
-                            pair.CurrentTopHeight += moveStep;
-                        }
-                    }
-                    else
-                    {
-                        // Target movement thông thường: di chuyển đến một điểm rồi dừng
-                        double distance = pair.TargetTopHeight - pair.CurrentTopHeight;
-                        double moveStep = pair.AnimationSpeed * Math.Sign(distance);
-                        
-                        if (Math.Abs(distance) <= Math.Abs(moveStep))
-                        {
-                            // Đã đến target, dừng lại
-                            pair.CurrentTopHeight = pair.TargetTopHeight;
-                            pair.IsMoving = false;
-                            pair.TargetMovementStage = 3; // Dừng
-                        }
-                        else
-                        {
-                            // Tiếp tục di chuyển
-                            pair.CurrentTopHeight += moveStep;
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Đã dừng, giữ nguyên vị trí
-                ApplyPipeGeometry(pair, pair.CurrentTopHeight);
-                return;
-            }
-
-            ApplyPipeGeometry(pair, pair.CurrentTopHeight);
+            var pair = pairUI.State;
+            
+            // Use StageService to apply animation logic (pair.X đã được update bởi UpdatePipePositions)
+            stageService.ApplyPipeAnimation(pair);
+            
+            // Update UI based on state
+            ApplyPipeGeometry(pair, pairUI.Top, pairUI.Bottom);
         }
 
         private void GameLoop(object? sender, EventArgs e)
@@ -1295,42 +861,53 @@ namespace PRN212.G5.FlappyBird.Views
                 }
             }
 
+            // Update pipe positions using StageService
+            stageService.UpdatePipePositions(speed);
+
             // Xử lý pipes (luôn hiển thị, không ẩn)
             for (int i = 0; i < pipePairs.Count; i++)
             {
-                var pair = pipePairs[i];
-                var top = pair.Top;
-                var bottom = pair.Bottom;
+                var pairUI = pipePairs[i];
+                var pair = pairUI.State;
+                var top = pairUI.Top;
+                var bottom = pairUI.Bottom;
+
+                // Update X position từ StageService (không lấy từ UI)
+                // pair.X đã được update bởi stageService.UpdatePipePositions(speed)
 
                 // Bỏ qua pipes trong group (chỉ xử lý leader, các pipes khác sẽ follow leader)
                 if (pair.GroupId != -1 && !pair.IsGroupLeader)
                 {
                     // Pipes trong group di chuyển cùng leader, giữ khoảng cách GroupPipeSpacing
-                    var leader = pipePairs.FirstOrDefault(p => p.GroupId == pair.GroupId && p.IsGroupLeader);
+                    var leader = pipePairs.FirstOrDefault(p => p.State.GroupId == pair.GroupId && p.State.IsGroupLeader);
                     if (leader != null)
                     {
-                        double leaderX = Canvas.GetLeft(leader.Top);
-                        double offset = pair.GroupIndex * GroupPipeSpacing;
+                        double leaderX = leader.State.X;
+                        double offset = pair.GroupIndex * stageService.GetGroupPipeSpacing();
                         Canvas.SetLeft(top, leaderX + offset);
                         Canvas.SetLeft(bottom, leaderX + offset);
+                        pair.X = leaderX + offset;
                     }
                     continue;
                 }
 
-                ApplyPipeAnimation(pair);
+                ApplyPipeAnimation(pairUI);
 
-                Canvas.SetLeft(top, Canvas.GetLeft(top) - speed);
-                Canvas.SetLeft(bottom, Canvas.GetLeft(bottom) - speed);
+                // Update UI position from StageService
+                // pair.X đã được update bởi stageService.UpdatePipePositions(speed)
+                Canvas.SetLeft(top, pair.X);
+                Canvas.SetLeft(bottom, pair.X);
 
-                if (Canvas.GetLeft(top) < -PipeWidth)
+                if (pair.X < -stageService.GetPipeWidth())
                 {
                     // Nếu là leader của group, xóa tất cả pipes trong group
                     if (pair.GroupId != -1 && pair.IsGroupLeader)
                     {
-                        var groupPipes = pipePairs.Where(p => p.GroupId == pair.GroupId).ToList();
+                        stageService.RemoveGroupPipes(pair.GroupId);
+                        var groupPipes = pipePairs.Where(p => p.State.GroupId == pair.GroupId).ToList();
                         foreach (var groupPipe in groupPipes)
                         {
-                            if (groupPipe != pair)
+                            if (groupPipe != pairUI)
                             {
                                 GameCanvas.Children.Remove(groupPipe.Top);
                                 GameCanvas.Children.Remove(groupPipe.Bottom);
@@ -1339,158 +916,70 @@ namespace PRN212.G5.FlappyBird.Views
                         }
                     }
                     
-                    double farthestRight = double.MinValue;
-                    for (int j = 0; j < pipePairs.Count; j++)
-                        if (j != i)
-                            farthestRight = Math.Max(farthestRight, Canvas.GetLeft(pipePairs[j].Top));
-
-                    // Tìm NoTouch xa nhất về bên phải để tạo khoảng trống
-                    double farthestNoTouchX = -1;
-                    foreach (var noTouchState in noTouchObstacles)
+                    // Xóa pipe này khỏi StageService trước khi tính farthestRight
+                    stageService.PipePairs.Remove(pair);
+                    
+                    // Tính farthestRight từ UI pipes còn lại (loại trừ pipe hiện tại)
+                    double farthestRight = 0;
+                    var remainingPipes = pipePairs.Where(p => p != pairUI && p.State.X >= -stageService.GetPipeWidth()).ToList();
+                    if (remainingPipes.Count > 0)
                     {
-                        if (noTouchState.Image != null && GameCanvas.Children.Contains(noTouchState.Image))
-                        {
-                            double noTouchX = Canvas.GetLeft(noTouchState.Image);
-                            if (!double.IsNaN(noTouchX) && noTouchX > farthestNoTouchX)
-                                farthestNoTouchX = noTouchX;
-                        }
+                        farthestRight = remainingPipes.Max(p => p.State.X);
                     }
+                    if (farthestRight <= 0)
+                    {
+                        farthestRight = stageService.GetFirstPipeStartLeft();
+                    }
+                    
+                    double farthestNoTouchX = stageService.GetFarthestNoTouchX();
 
                     double newX;
                     if (farthestNoTouchX > 0)
                     {
                         // Có NoTouch, đặt pipe cách NoTouch nửa màn hình (500px)
-                        newX = Math.Max(farthestNoTouchX + 500, farthestRight + PipeSpacing);
+                        newX = Math.Max(farthestNoTouchX + 500, farthestRight + stageService.GetPipeSpacing());
                     }
                     else
                     {
-                        // Không có NoTouch, đặt bình thường
-                        newX = farthestRight == double.MinValue ? FirstPipeStartLeft : farthestRight + PipeSpacing;
+                        // Không có NoTouch, đặt bình thường - đảm bảo pipe xuất hiện từ bên phải màn hình
+                        newX = farthestRight + stageService.GetPipeSpacing();
+                        // Đảm bảo newX không nhỏ hơn 1000 (bên phải màn hình)
+                        if (newX < 1000)
+                        {
+                            newX = 1000;
+                        }
                     }
 
+                    // Tạo lại pipe với vị trí mới
+                    pair.X = newX;
                     Canvas.SetLeft(top, newX);
                     Canvas.SetLeft(bottom, newX);
+                    
+                    // Thêm lại vào StageService
+                    stageService.PipePairs.Add(pair);
 
                     // Kiểm tra xem có tạo group pipes không
-                    // Score 15-49: 45% cơ hội, Score 50+: 65% cơ hội (tăng 15%)
-                    double groupChance = score >= 50 ? 0.65 : (score >= 15 ? 0.45 : 0.0);
-                    bool shouldCreateGroup = score >= 15 && rnd.NextDouble() < groupChance && pair.GroupId == -1;
+                    bool shouldCreateGroup = stageService.ShouldCreateGroup(score) && pair.GroupId == -1;
                     
                     if (shouldCreateGroup)
                     {
-                        // Tạo group pipes: size phụ thuộc vào score
-                        // Score 15-40: size 2-3, Score > 40: size 4
-                        int groupSize;
-                        if (score >= 15 && score <= 40)
-                        {
-                            groupSize = rnd.Next(2, 4); // 2-3 pipes
-                        }
-                        else // score > 40
-                        {
-                            groupSize = 4; // 4 pipes
-                        }
-                        int currentGroupId = nextGroupId++;
+                        int groupSize = stageService.GetGroupSize(score);
+                        int currentGroupId = stageService.GetNextGroupId();
                         
                         // TẤT CẢ group pipes đều dùng pattern cầu thang (staircase)
                         // Chọn loại: tĩnh hoặc có animation
-                        bool isAnimatedGroup = rnd.NextDouble() < 0.5; // 50% tĩnh, 50% animated
+                        bool isAnimatedGroup = new Random().NextDouble() < 0.5; // 50% tĩnh, 50% animated
                         
-                        int minTopHeight = 100;
-                        int minBottomHeight = 100;
-                        int maxTopHeight = 590 - gap - minBottomHeight;
-                        List<double> groupHeights = new List<double>();
-                        
-                        // TẤT CẢ group pipes đều dùng pattern cầu thang (staircase)
-                        // QUAN TRỌNG: Tạo hình cầu thang dựa trên BOTTOM height
-                        // Cầu thang lên: Bottom pipe 1 < Bottom pipe 2 < Bottom pipe 3 (bottom tăng dần)
-                        // Cầu thang xuống: Bottom pipe 1 > Bottom pipe 2 > Bottom pipe 3 (bottom giảm dần)
-                        // Gap giữa bottom pipe trước và top pipe sau = gap (180px) - CỐ ĐỊNH
-                        bool ascending = rnd.NextDouble() < 0.5; // Ngẫu nhiên lên hoặc xuống
-                        // Tĩnh: 50px, Animated: 20px
-                        double stepSize = isAnimatedGroup ? 20 : 50; // Chênh lệch bottom giữa các pipes
-                            
-                        // TẤT CẢ group pipes đều dùng pattern cầu thang
-                        double currentTopHeight;
-                        if (ascending)
-                        {
-                            // Cầu thang lên: Bottom tăng dần
-                            // Pipe đầu tiên: bottom thấp
-                            currentTopHeight = minTopHeight + rnd.Next(50, 150);
-                            groupHeights.Add(currentTopHeight);
-                            
-                            for (int g = 1; g < groupSize; g++)
-                            {
-                                // Bottom của pipe trước
-                                double bottomOfPrevious = currentTopHeight + gap;
-                                // Bottom của pipe sau = bottom của pipe trước + stepSize (tăng dần 10px) - ƯU TIÊN
-                                double nextBottom = bottomOfPrevious + stepSize;
-                                // Top height của pipe sau = nextBottom - gap (đảm bảo gap trong pipe = 180px)
-                                double nextTopHeight = nextBottom - gap;
-                                
-                                // Đảm bảo top height hợp lệ
-                                if (nextTopHeight < minTopHeight + 50)
-                                {
-                                    // Không thể tiếp tục, dừng group
-                                    break;
-                                }
-                                
-                                // Đảm bảo bottom không vượt quá màn hình
-                                if (nextBottom > 590 - minBottomHeight)
-                                {
-                                    // Không thể tiếp tục, dừng group
-                                    break;
-                                }
-                                
-                                nextTopHeight = Math.Clamp(nextTopHeight, minTopHeight + 50, 590 - gap - minBottomHeight);
-                                groupHeights.Add(nextTopHeight);
-                                currentTopHeight = nextTopHeight;
-                            }
-                        }
-                        else
-                        {
-                            // Cầu thang xuống: Bottom giảm dần
-                            // Pipe đầu tiên: bottom cao
-                            double maxBottom = 590 - minBottomHeight;
-                            double firstBottom = maxBottom - rnd.Next(0, 100);
-                            currentTopHeight = firstBottom - gap;
-                            currentTopHeight = Math.Clamp(currentTopHeight, minTopHeight + 50, 590 - gap - minBottomHeight);
-                            groupHeights.Add(currentTopHeight);
-                            
-                            for (int g = 1; g < groupSize; g++)
-                            {
-                                // Bottom của pipe trước
-                                double bottomOfPrevious = currentTopHeight + gap;
-                                // Bottom của pipe sau = bottom của pipe trước - stepSize (giảm dần 10px) - ƯU TIÊN
-                                double nextBottom = bottomOfPrevious - stepSize;
-                                // Top height của pipe sau = nextBottom - gap (đảm bảo gap trong pipe = 180px)
-                                double nextTopHeight = nextBottom - gap;
-                                
-                                // Đảm bảo top height hợp lệ
-                                if (nextTopHeight < minTopHeight + 50)
-                                {
-                                    // Không thể tiếp tục, dừng group
-                                    break;
-                                }
-                                
-                                // Đảm bảo bottom không xuống quá thấp
-                                if (nextBottom < gap + minTopHeight + 50)
-                                {
-                                    // Không thể tiếp tục, dừng group
-                                    break;
-                                }
-                                
-                                nextTopHeight = Math.Clamp(nextTopHeight, minTopHeight + 50, 590 - gap - minBottomHeight);
-                                groupHeights.Add(nextTopHeight);
-                                currentTopHeight = nextTopHeight;
-                            }
-                        }
+                        // Sử dụng StageService để generate group heights
+                        List<double> groupHeights = stageService.GenerateGroupHeights(groupSize, isAnimatedGroup, out bool ascending);
                         
                         // Nếu không tạo được ít nhất 2 pipes, không tạo group (quay lại pipe bình thường)
                         if (groupHeights.Count < 2)
                         {
                             pair.GroupId = -1;
                             pair.IsGroupLeader = false;
-                            RandomizePipe(pair);
+                            stageService.RandomizePipe(pair, score);
+                            ApplyPipeGeometry(pair, top, bottom);
                             continue; // Bỏ qua phần tạo group, tiếp tục với pipe bình thường
                         }
                         
@@ -1505,14 +994,16 @@ namespace PRN212.G5.FlappyBird.Views
                         pair.CurrentTopHeight = groupHeights[0];
                         
                         // Set height trước (không thay đổi)
+                        int minTopHeight = 100;
+                        int minBottomHeight = 100;
                         pair.MinTopHeight = minTopHeight;
                         pair.MinBottomHeight = minBottomHeight;
-                        ApplyPipeGeometry(pair, groupHeights[0]);
+                        ApplyPipeGeometry(pair, top, bottom);
                         
                         if (isAnimatedGroup)
                         {
                             // Animated group: Chỉ random animation properties, KHÔNG thay đổi height
-                            RandomizePipeAnimationOnly(pair);
+                            stageService.RandomizePipeAnimationOnly(pair, score);
                         }
                         else
                         {
@@ -1527,8 +1018,25 @@ namespace PRN212.G5.FlappyBird.Views
                         // Tạo các pipes còn lại trong group (chỉ tạo đúng số pipes đã tính được)
                         for (int g = 1; g < groupHeights.Count; g++)
                         {
-                            double groupPipeX = newX + (g * GroupPipeSpacing);
-                            string pipeFile = isNight ? "Pipe-night.png" : "Pipe-day.png";
+                            double groupPipeX = newX + (g * stageService.GetGroupPipeSpacing());
+                            
+                            // Tạo PipePairState trong StageService
+                            var groupPairState = new PipePairState
+                            {
+                                X = groupPipeX,
+                                GroupId = currentGroupId,
+                                IsGroupLeader = false,
+                                GroupIndex = g,
+                                BaseTopHeight = groupHeights[g],
+                                CurrentTopHeight = groupHeights[g],
+                                MinTopHeight = minTopHeight,
+                                MinBottomHeight = minBottomHeight
+                            };
+                            
+                            stageService.PipePairs.Add(groupPairState);
+                            
+                            // Tạo UI
+                            string pipeFile = stageService.IsNight ? "Pipe-night.png" : "Pipe-day.png";
                             
                             var groupTop = new Image
                             {
@@ -1552,38 +1060,24 @@ namespace PRN212.G5.FlappyBird.Views
                             Canvas.SetLeft(groupTop, groupPipeX);
                             Canvas.SetLeft(groupBottom, groupPipeX);
                             
-                            var groupPair = new PipePairState(groupTop, groupBottom)
-                            {
-                                GroupId = currentGroupId,
-                                IsGroupLeader = false,
-                                GroupIndex = g,
-                                BaseTopHeight = groupHeights[g],
-                                CurrentTopHeight = groupHeights[g],
-                                MinTopHeight = minTopHeight,
-                                MinBottomHeight = minBottomHeight
-                            };
-                            
-                            // Set height trước (không thay đổi)
-                            groupPair.MinTopHeight = minTopHeight;
-                            groupPair.MinBottomHeight = minBottomHeight;
-                            ApplyPipeGeometry(groupPair, groupHeights[g]);
+                            ApplyPipeGeometry(groupPairState, groupTop, groupBottom);
                             
                             if (isAnimatedGroup)
                             {
                                 // Cầu thang animated: Chỉ random animation properties, KHÔNG thay đổi height
-                                RandomizePipeAnimationOnly(groupPair);
+                                stageService.RandomizePipeAnimationOnly(groupPairState, score);
                             }
                             else
                             {
                                 // Cầu thang tĩnh: Không có animation
-                                groupPair.EnableVerticalAnimation = false;
-                                groupPair.IsMoving = false;
-                                groupPair.IsOscillating = false;
-                                groupPair.HasTargetMovement = false;
-                                groupPair.IsJumpPattern = false;
+                                groupPairState.EnableVerticalAnimation = false;
+                                groupPairState.IsMoving = false;
+                                groupPairState.IsOscillating = false;
+                                groupPairState.HasTargetMovement = false;
+                                groupPairState.IsJumpPattern = false;
                             }
                             
-                            pipePairs.Add(groupPair);
+                            pipePairs.Add(new PipePairUI(groupTop, groupBottom, groupPairState));
                         }
                     }
                     else
@@ -1591,143 +1085,122 @@ namespace PRN212.G5.FlappyBird.Views
                         // Pipe bình thường
                         pair.GroupId = -1;
                         pair.IsGroupLeader = false;
-                        RandomizePipe(pair);
+                        stageService.RandomizePipe(pair, score);
+                        ApplyPipeGeometry(pair, top, bottom);
                     }
 
                     score++;
-                    totalPipesPassed++;
+                    stageService.OnPipePassed();
                     ScoreText.Text = $"Score: {score}";
                     PlaySfx(sfxPoint, "Point.mp3", 0.6);
                     
-                    // Kiểm tra xem có cần spawn NoTouch không
-                    // Phase 1 (pipes 1-10): không có NoTouch
-                    // Phase 2 (pipes 11-20): random 1 con trong khoảng này (chỉ 1 lần)
-                    // Phase 3 (pipes 21-30): random 2 con trong khoảng này (chỉ 1 lần)
-                    // Phase 4 (pipes 31-40): random 3 con trong khoảng này (chỉ 1 lần)
-                    // ... đến Phase 10 (pipes 91-100): random 9 con trong khoảng này (chỉ 1 lần)
-                    if (totalPipesPassed > 10)
+                    // Kiểm tra xem có cần spawn NoTouch không (sử dụng StageService)
+                    if (stageService.ShouldSpawnNoTouch(stageService.GetTotalPipesPassed(), out int noTouchCount, out int spawnAt))
                     {
-                        int currentPhase = (totalPipesPassed - 1) / 10; // Phase 1, 2, 3, ...
-                        int phaseStartPipe = currentPhase * 10 + 1; // Pipe bắt đầu phase (11, 21, 31...)
-                        int phaseEndPipe = (currentPhase + 1) * 10; // Pipe kết thúc phase (20, 30, 40...)
-                        int noTouchCount = Math.Min(9, currentPhase); // Số lượng NoTouch = phase (tối đa 9)
-                        
-                        // Chỉ random điểm spawn khi bắt đầu phase mới và chưa spawn trong phase này
-                        if (noTouchCount > 0 && currentPhase != lastSpawnedPhase && nextNoTouchSpawnAt == -1)
-                        {
-                            // Random một điểm trong phase hiện tại
-                            nextNoTouchSpawnAt = rnd.Next(phaseStartPipe, phaseEndPipe + 1);
-                        }
-                        
-                        // Kiểm tra xem đã đến điểm spawn chưa và chưa spawn trong phase này
-                        if (totalPipesPassed >= nextNoTouchSpawnAt && nextNoTouchSpawnAt > 0 && currentPhase != lastSpawnedPhase)
+                        if (spawnAt > 0)
                         {
                             // Spawn NoTouch ngay sau pipe vừa recycle
-                            SpawnNoTouchGroup(noTouchCount, newX + PipeSpacing);
-                            
-                            // Đánh dấu đã spawn trong phase này
-                            lastSpawnedPhase = currentPhase;
-                            nextNoTouchSpawnAt = -1;
+                            SpawnNoTouchGroup(noTouchCount, newX + stageService.GetPipeSpacing());
                         }
                     }
                 }
 
-                // Kiểm tra collision với pipes
-                if (graceTicksRemaining <= 0 &&
-                    (FlappyBird.CollidesWith(top) || FlappyBird.CollidesWith(bottom)))
-                {
-                    EndGame();
-                    return;
-                }
+                // Kiểm tra collision với pipes - COMMENTED FOR TESTING
+                // if (graceTicksRemaining <= 0 &&
+                //     (FlappyBird.CollidesWith(top) || FlappyBird.CollidesWith(bottom)))
+                // {
+                //     EndGame();
+                //     return;
+                // }
             }
 
-            // Xử lý NoTouch obstacles
+            // Update NoTouch positions using StageService
+            stageService.UpdateNoTouchPositions(speed);
+            
+            // Sync UI với StageService states
             for (int i = noTouchObstacles.Count - 1; i >= 0; i--)
             {
                 if (i < 0 || i >= noTouchObstacles.Count) break;
-                var state = noTouchObstacles[i];
-                if (state == null || state.Image == null || !GameCanvas.Children.Contains(state.Image))
+                var noTouchUI = noTouchObstacles[i];
+                var state = noTouchUI.State;
+                
+                if (noTouchUI.Image == null || !GameCanvas.Children.Contains(noTouchUI.Image))
                 {
-                    if (i < noTouchObstacles.Count)
-                        noTouchObstacles.RemoveAt(i);
-                    continue;
-                }
-
-                double x = Canvas.GetLeft(state.Image);
-                if (double.IsNaN(x) || x < -100)
-                {
-                    if (GameCanvas.Children.Contains(state.Image))
-                        GameCanvas.Children.Remove(state.Image);
                     noTouchObstacles.RemoveAt(i);
                     continue;
                 }
 
-                // Di chuyển ngang
-                Canvas.SetLeft(state.Image, x - speed);
-
-                // Animation lên xuống (nếu có)
-                if (state.IsOscillating)
+                if (double.IsNaN(state.X) || state.X < -100)
                 {
-                    state.OscillationPhase += state.OscillationSpeed;
-                    state.CurrentY = state.BaseY + Math.Sin(state.OscillationPhase) * state.OscillationAmplitude;
-                    Canvas.SetTop(state.Image, state.CurrentY);
-                }
-
-                // Kiểm tra collision
-                if (graceTicksRemaining <= 0 && FlappyBird.CollidesWith(state.Image))
-                {
-                    EndGame();
-                    return;
-                }
-            }
-            
-            // Xử lý Gates (cổng)
-            for (int i = gates.Count - 1; i >= 0; i--)
-            {
-                if (i < 0 || i >= gates.Count) break;
-                var gateState = gates[i];
-                if (gateState == null || gateState.Gate == null || !GameCanvas.Children.Contains(gateState.Gate))
-                {
-                    if (i < gates.Count)
-                        gates.RemoveAt(i);
+                    if (GameCanvas.Children.Contains(noTouchUI.Image))
+                        GameCanvas.Children.Remove(noTouchUI.Image);
+                    noTouchObstacles.RemoveAt(i);
                     continue;
                 }
 
-                double gateX = Canvas.GetLeft(gateState.Gate);
-                if (double.IsNaN(gateX) || gateX < -150)
+                // Update UI position từ state
+                Canvas.SetLeft(noTouchUI.Image, state.X);
+                Canvas.SetTop(noTouchUI.Image, state.CurrentY);
+
+                // Kiểm tra collision - COMMENTED FOR TESTING
+                // if (graceTicksRemaining <= 0 && FlappyBird.CollidesWith(noTouchUI.Image))
+                // {
+                //     EndGame();
+                //     return;
+                // }
+            }
+            
+            // Remove offscreen NoTouch from StageService
+            stageService.RemoveOffscreenNoTouch();
+            
+            // Update Gate positions using StageService
+            stageService.UpdateGatePositions(speed);
+            
+            // Sync UI với StageService states
+            for (int i = gates.Count - 1; i >= 0; i--)
+            {
+                if (i < 0 || i >= gates.Count) break;
+                var gateUI = gates[i];
+                var state = gateUI.State;
+                
+                if (gateUI.Gate == null || !GameCanvas.Children.Contains(gateUI.Gate))
                 {
-                    // Cổng đã đi qua màn hình, xóa nó
-                    if (GameCanvas.Children.Contains(gateState.Gate))
-                        GameCanvas.Children.Remove(gateState.Gate);
                     gates.RemoveAt(i);
                     continue;
                 }
 
-                // Di chuyển cổng ngang
-                Canvas.SetLeft(gateState.Gate, gateX - speed);
-
-                // Kiểm tra collision với chim - chỉ kiểm tra khi cổng gần chim để tối ưu
-                if (!gateState.IsActivated && graceTicksRemaining <= 0)
+                if (double.IsNaN(state.X) || state.X < -150)
                 {
-                    // Chỉ kiểm tra collision khi cổng ở gần chim (trong phạm vi 150px) và mỗi 5 frame để giảm lag
+                    if (GameCanvas.Children.Contains(gateUI.Gate))
+                        GameCanvas.Children.Remove(gateUI.Gate);
+                    gates.RemoveAt(i);
+                    continue;
+                }
+
+                // Update UI position từ state
+                Canvas.SetLeft(gateUI.Gate, state.X);
+                Canvas.SetTop(gateUI.Gate, state.Y);
+
+                // Kiểm tra collision với chim
+                if (!state.IsActivated && graceTicksRemaining <= 0)
+                {
                     double birdX = Canvas.GetLeft(FlappyBird);
-                    double distance = Math.Abs(gateX - birdX);
+                    double distance = Math.Abs(state.X - birdX);
                     
-                    // Chỉ kiểm tra khi gần và mỗi 5 frame (giảm tần suất kiểm tra từ mỗi frame xuống mỗi 5 frame)
                     if (distance < 150 && (frameCount % 5 == 0))
                     {
-                        if (FlappyBird.CollidesWith(gateState.Gate))
+                        if (FlappyBird.CollidesWith(gateUI.Gate))
                         {
-                            gateState.IsActivated = true;
-                            // Trigger chuyển đổi ngày/đêm
+                            state.IsActivated = true;
                             SmoothToggleDayNight();
-                            
-                            // Thêm hiệu ứng khi vào cổng - làm cổng sáng lên (đơn giản hơn)
-                            gateState.Gate.Opacity = 1.0;
+                            gateUI.Gate.Opacity = 1.0;
                         }
                     }
                 }
             }
+            
+            // Remove offscreen Gates from StageService
+            stageService.RemoveOffscreenGates();
 
             double currentBirdTop = Canvas.GetTop(FlappyBird);
 
@@ -1737,13 +1210,14 @@ namespace PRN212.G5.FlappyBird.Views
                 birdSpeed = 0;
             }
 
-            double groundLevel = CanvasHeight - FlappyBird.Height;
-            if (currentBirdTop > groundLevel)
-            {
-                Canvas.SetTop(FlappyBird, groundLevel);
-                birdSpeed = 0;
-                EndGame();
-            }
+            // Kiểm tra collision với ground - COMMENTED FOR TESTING
+            // double groundLevel = CanvasHeight - FlappyBird.Height;
+            // if (currentBirdTop > groundLevel)
+            // {
+            //     Canvas.SetTop(FlappyBird, groundLevel);
+            //     birdSpeed = 0;
+            //     EndGame();
+            // }
         }
 
         private void UpdateBirdAnimationState()
