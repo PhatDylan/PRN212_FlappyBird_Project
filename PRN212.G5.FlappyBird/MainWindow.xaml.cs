@@ -62,6 +62,9 @@ namespace PRN212.G5.FlappyBird.Views
         private const int PipeWidth = 80;
 
         private bool isTransitioning = false;
+        private readonly MediaPlayer sfxJump = new();
+        private readonly MediaPlayer sfxPoint = new();
+        private readonly MediaPlayer sfxFail = new();
 
         public MainWindow(double initialPipeSpeed)
         {
@@ -93,6 +96,16 @@ namespace PRN212.G5.FlappyBird.Views
         }
 
         private string Pack(string file) => $"pack://application:,,,/Assets/{file}";
+        private string AssetPath(string file) => System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", file);
+
+        private void PlaySfx(MediaPlayer player, string file, double volume = 0.6)
+        {
+                player.Stop();
+                player.Open(new Uri(AssetPath(file)));
+                player.Volume = volume;
+                player.Position = TimeSpan.Zero;
+                player.Play();
+        }
 
         private void LoadAllBirdFrames()
         {
@@ -287,6 +300,7 @@ namespace PRN212.G5.FlappyBird.Views
 
             isFallingAnimation = true;
             birdFrameIndex = 0;
+            PlaySfx(sfxFail, "Fail.mp3", 0.7);
         }
 
         private void SmoothToggleDayNight()
@@ -462,6 +476,7 @@ namespace PRN212.G5.FlappyBird.Views
 
                     score++;
                     ScoreText.Text = $"Score: {score}";
+                    PlaySfx(sfxPoint, "Point.mp3", 0.6);
                 }
 
                 if (graceTicksRemaining <= 0 &&
@@ -507,6 +522,7 @@ namespace PRN212.G5.FlappyBird.Views
             if (e.Key == Key.Space)
             {
                 birdSpeed = -10;
+                PlaySfx(sfxJump, "Jump.mp3", 0.5);
             }
             else if (e.Key == Key.N)
             {

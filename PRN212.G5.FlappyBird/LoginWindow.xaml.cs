@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Media;
+using System.IO;
 using PRN212.G5.FlappyBird.Views;
 
 namespace PRN212.G5.FlappyBird
@@ -14,33 +15,34 @@ namespace PRN212.G5.FlappyBird
         private double selectedPipeSpeed = DefaultPipeSpeed;
         private double musicVolume = 50;
 
-        private MediaPlayer mediaPlayer; // Dùng MediaPlayer thay vì MediaElement
+        private MediaPlayer mediaPlayer; 
 
         public LoginWindow(double initialPipeSpeed = DefaultPipeSpeed)
         {
+            InitializeMediaPlayer();
+
+            PreloadBgm();
+
             InitializeComponent();
 
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
 
-            // Khởi tạo MediaPlayer
-            InitializeMediaPlayer();
+            // Khởi tạo MediaPlayer      
+        }
+
+        private void PreloadBgm()
+        {
+            mediaPlayer.Volume = 0; 
+            mediaPlayer.Play();
+            mediaPlayer.Pause();
         }
 
         private void InitializeMediaPlayer()
         {
-            try
-            {
                 mediaPlayer = new MediaPlayer();
-                mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
-
-                // Load nhạc từ resource
-                var uri = new Uri("pack://application:,,,/Assets/BGM.mp3");
-                mediaPlayer.Open(uri);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Không thể load nhạc: {ex.Message}");
-            }
+                mediaPlayer.MediaEnded += MediaPlayer_MediaEnded; 
+                string assetPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BGM.mp3");
+                mediaPlayer.Open(new Uri(assetPath));
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
