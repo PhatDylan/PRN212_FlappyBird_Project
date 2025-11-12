@@ -22,14 +22,17 @@ namespace PRN212.G5.FlappyBird.Views
 
         private BitmapImage[] dayBirdFlyFrames = Array.Empty<BitmapImage>();
         private BitmapImage[] dayBirdFallFrames = Array.Empty<BitmapImage>();
+        private BitmapImage[] dayBirdDeathFrames = Array.Empty<BitmapImage>();
         private BitmapImage[] nightBirdFlyFrames = Array.Empty<BitmapImage>();
         private BitmapImage[] nightBirdFallFrames = Array.Empty<BitmapImage>();
+        private BitmapImage[] nightBirdDeathFrames = Array.Empty<BitmapImage>();
 
         private BitmapImage[] currentFlyFrames = Array.Empty<BitmapImage>();
         private BitmapImage[] currentFallFrames = Array.Empty<BitmapImage>();
+        private BitmapImage[] currentDeathFrames = Array.Empty<BitmapImage>();
 
         private int birdFrameIndex = 0;
-        private bool isFallingAnimation = false;
+        private BirdAnimationState animationState = BirdAnimationState.Flying;
 
         private double birdSpeed = 0;
         private int score = 0;
@@ -63,6 +66,13 @@ namespace PRN212.G5.FlappyBird.Views
 
         private bool isTransitioning = false;
 
+        // Animation constants
+        private const double FlapThreshold = -3; // Speed threshold to switch to flapping animation
+        private const double FallThreshold = 2; // Speed threshold to switch to falling animation
+        private double birdRotation = 0;
+        private const double MaxUpRotation = -30;
+        private const double MaxDownRotation = 90;
+
         public MainWindow(double initialPipeSpeed)
         {
             InitializeComponent();
@@ -73,7 +83,7 @@ namespace PRN212.G5.FlappyBird.Views
             gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             gameTimer.Tick += GameLoop;
 
-            birdAnimTimer.Interval = TimeSpan.FromMilliseconds(120);
+            birdAnimTimer.Interval = TimeSpan.FromMilliseconds(100);
             birdAnimTimer.Tick += BirdAnimTick;
 
             dayNightTimer.Interval = TimeSpan.FromMinutes(0.50);
@@ -87,6 +97,7 @@ namespace PRN212.G5.FlappyBird.Views
 
             Loaded += MainWindow_OnLoaded;
         }
+        
         private void MainWindow_OnLoaded(object sender, RoutedEventArgs e)
         {
             StartGame();
@@ -96,29 +107,66 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void LoadAllBirdFrames()
         {
-            dayBirdFlyFrames = new[]
-            {
-                LoadBitmapSafe("birdfly-1.png"),
-            };
-            dayBirdFallFrames = new[]
-            {
-                LoadBitmapSafe("birdfall-1.png"),
-            };
+            // Day theme - Fly animation (using single reliable frame)
+            var birdFly1 = LoadBitmapSafe("birdfly-1.png");
+            var birdFall1 = LoadBitmapSafe("birdfall-1.png");
 
-            nightBirdFlyFrames = new[]
+            // Only use frames that actually exist
+            if (birdFly1 != null)
             {
-                LoadBitmapSafe("birdfly-3.png")
-            };
-            nightBirdFallFrames = new[]
+                dayBirdFlyFrames = new[] { birdFly1 };
+            }
+            else
             {
-                LoadBitmapSafe("birdfall-3.png")
-            };
+                // Fallback to a default if birdfly-1.png is missing
+                dayBirdFlyFrames = new BitmapImage[0];
+            }
 
-            if (HasMissing(nightBirdFlyFrames) || HasMissing(nightBirdFallFrames))
+            if (birdFall1 != null)
+            {
+                dayBirdFallFrames = new[] { birdFall1 };
+                dayBirdDeathFrames = new[] { birdFall1 };
+            }
+            else
+            {
+                dayBirdFallFrames = new BitmapImage[0];
+                dayBirdDeathFrames = new BitmapImage[0];
+            }
+
+            // Night theme - Try to load night frames, fallback to day if missing
+            var birdFly3 = LoadBitmapSafe("birdfly-3.png");
+            var birdFall3 = LoadBitmapSafe("birdfall-3.png");
+
+            if (birdFly3 != null)
+            {
+                nightBirdFlyFrames = new[] { birdFly3 };
+            }
+            else
             {
                 nightBirdFlyFrames = dayBirdFlyFrames;
-                nightBirdFallFrames = dayBirdFallFrames;
             }
+
+            if (birdFall3 != null)
+            {
+                nightBirdFallFrames = new[] { birdFall3 };
+                nightBirdDeathFrames = new[] { birdFall3 };
+            }
+            else
+            {
+                nightBirdFallFrames = dayBirdFallFrames;
+                nightBirdDeathFrames = dayBirdDeathFrames;
+            }
+        }
+
+        private BitmapImage[] FilterNullFrames(BitmapImage[] frames)
+        {
+            var validFrames = new List<BitmapImage>();
+            foreach (var frame in frames)
+            {
+                if (frame != null)
+                    validFrames.Add(frame);
+            }
+            return validFrames.Count > 0 ? validFrames.ToArray() : frames;
         }
 
         private bool HasMissing(BitmapImage[] arr)
@@ -144,9 +192,10 @@ namespace PRN212.G5.FlappyBird.Views
         {
             currentFlyFrames = night ? nightBirdFlyFrames : dayBirdFlyFrames;
             currentFallFrames = night ? nightBirdFallFrames : dayBirdFallFrames;
+            currentDeathFrames = night ? nightBirdDeathFrames : dayBirdDeathFrames;
 
             birdFrameIndex = 0;
-            isFallingAnimation = false;
+            animationState = BirdAnimationState.Flying;
 
             if (currentFlyFrames.Length > 0 && currentFlyFrames[0] != null)
                 FlappyBird.Source = currentFlyFrames[0];
@@ -168,6 +217,8 @@ namespace PRN212.G5.FlappyBird.Views
             Canvas.SetTop(FlappyBird, 247);
             Panel.SetZIndex(FlappyBird, 5);
             birdSpeed = 0;
+            birdRotation = 0;
+            UpdateBirdRotation();
             score = 0;
             pipeSpeed = selectedPipeSpeed;
             ScoreText.Text = "Score: 0";
@@ -180,7 +231,7 @@ namespace PRN212.G5.FlappyBird.Views
 
             graceTicksRemaining = StartGraceTicks;
 
-            isFallingAnimation = false;
+            animationState = BirdAnimationState.Flying;
             birdFrameIndex = 0;
             UseBirdFramesForTheme(false);
 
@@ -285,8 +336,50 @@ namespace PRN212.G5.FlappyBird.Views
             GoBestScoreValue.Text = highScore.ToString();
             GameOverPanel.Visibility = Visibility.Visible;
 
-            isFallingAnimation = true;
+            // Switch to death animation
+            animationState = BirdAnimationState.Dead;
             birdFrameIndex = 0;
+            
+            // Animate bird falling down with rotation
+            AnimateBirdDeath();
+        }
+
+        private void AnimateBirdDeath()
+        {
+            // Create a falling animation for the dead bird
+            var fallDuration = TimeSpan.FromSeconds(0.8);
+            var currentTop = Canvas.GetTop(FlappyBird);
+            var groundLevel = CanvasHeight - FlappyBird.Height;
+
+            var fallAnim = new DoubleAnimation
+            {
+                From = currentTop,
+                To = groundLevel,
+                Duration = fallDuration,
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+            };
+
+            // Rotate bird to falling position
+            var rotateAnim = new DoubleAnimation
+            {
+                From = birdRotation,
+                To = MaxDownRotation,
+                Duration = fallDuration,
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
+            };
+
+            rotateAnim.Completed += (_, __) =>
+            {
+                birdRotation = MaxDownRotation;
+            };
+
+            var rt = FlappyBird.RenderTransform as RotateTransform;
+            if (rt != null)
+            {
+                rt.BeginAnimation(RotateTransform.AngleProperty, rotateAnim);
+            }
+
+            FlappyBird.BeginAnimation(Canvas.TopProperty, fallAnim);
         }
 
         private void SmoothToggleDayNight()
@@ -429,6 +522,12 @@ namespace PRN212.G5.FlappyBird.Views
             Canvas.SetTop(FlappyBird, birdTop + birdSpeed);
             birdSpeed += 1;
 
+            // Update bird animation state based on speed
+            UpdateBirdAnimationState();
+            
+            // Update bird rotation based on speed
+            UpdateBirdRotation();
+
             double speed = pipeSpeed + score * 0.1;
             if (graceTicksRemaining > 0) graceTicksRemaining--;
 
@@ -485,17 +584,83 @@ namespace PRN212.G5.FlappyBird.Views
             {
                 Canvas.SetTop(FlappyBird, groundLevel);
                 birdSpeed = 0;
+                EndGame();
+            }
+        }
+
+        private void UpdateBirdAnimationState()
+        {
+            if (animationState == BirdAnimationState.Dead)
+                return;
+
+            // Determine animation state based on bird speed
+            if (birdSpeed < FlapThreshold)
+            {
+                // Bird is going up - show flying animation
+                if (animationState != BirdAnimationState.Flying)
+                {
+                    animationState = BirdAnimationState.Flying;
+                    birdFrameIndex = 0;
+                }
+            }
+            else if (birdSpeed > FallThreshold)
+            {
+                // Bird is falling - show falling animation
+                if (animationState != BirdAnimationState.Falling)
+                {
+                    animationState = BirdAnimationState.Falling;
+                    birdFrameIndex = 0;
+                }
+            }
+        }
+
+        private void UpdateBirdRotation()
+        {
+            if (animationState == BirdAnimationState.Dead)
+                return;
+
+            // Calculate rotation based on bird speed
+            // Negative speed (going up) = rotate up
+            // Positive speed (falling) = rotate down
+            double targetRotation = Math.Clamp(birdSpeed * 3, MaxUpRotation, MaxDownRotation);
+            
+            // Smooth rotation transition
+            birdRotation += (targetRotation - birdRotation) * 0.2;
+
+            var rt = FlappyBird.RenderTransform as RotateTransform;
+            if (rt != null)
+            {
+                rt.Angle = birdRotation;
             }
         }
 
         private void BirdAnimTick(object? sender, EventArgs e)
         {
-            var frames = isFallingAnimation ? currentFallFrames : currentFlyFrames;
+            BitmapImage[] frames;
+
+            // Select frames based on animation state
+            switch (animationState)
+            {
+                case BirdAnimationState.Flying:
+                    frames = currentFlyFrames;
+                    break;
+                case BirdAnimationState.Falling:
+                    frames = currentFallFrames;
+                    break;
+                case BirdAnimationState.Dead:
+                    frames = currentDeathFrames;
+                    break;
+                default:
+                    frames = currentFlyFrames;
+                    break;
+            }
 
             if (frames == null || frames.Length == 0) return;
 
+            // Advance to next frame
             birdFrameIndex = (birdFrameIndex + 1) % frames.Length;
 
+            // Update bird sprite
             if (frames[birdFrameIndex] != null)
                 FlappyBird.Source = frames[birdFrameIndex];
         }
@@ -507,6 +672,9 @@ namespace PRN212.G5.FlappyBird.Views
             if (e.Key == Key.Space)
             {
                 birdSpeed = -10;
+                // Immediately switch to flying animation when player flaps
+                animationState = BirdAnimationState.Flying;
+                birdFrameIndex = 0;
             }
             else if (e.Key == Key.N)
             {
@@ -516,10 +684,24 @@ namespace PRN212.G5.FlappyBird.Views
 
         private void BtnReplay_Click(object sender, RoutedEventArgs e)
         {
+            // Stop all timers and animations
             StopGameLoops();
+            
+            // Clear all bird animations
+            FlappyBird.BeginAnimation(Canvas.TopProperty, null);
+            var rt = FlappyBird.RenderTransform as RotateTransform;
+            if (rt != null)
+            {
+                rt.BeginAnimation(RotateTransform.AngleProperty, null);
+            }
+            
+            // Hide game over panel
             GameOverPanel.Visibility = Visibility.Collapsed;
 
-            ResetStageToDay(true);
+            // Reset to day theme without animation for immediate response
+            ResetStageToDay(false);
+            
+            // Start new game
             StartGame();
         }
 
@@ -541,6 +723,13 @@ namespace PRN212.G5.FlappyBird.Views
             birdAnimTimer.Stop();
             dayNightTimer.Stop();
         }
+    }
+
+    public enum BirdAnimationState
+    {
+        Flying,     // Wings flapping, bird going up
+        Falling,    // Wings down, bird falling
+        Dead        // Game over state
     }
 
     public static class CollisionExtensions
@@ -566,6 +755,51 @@ namespace PRN212.G5.FlappyBird.Views
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
