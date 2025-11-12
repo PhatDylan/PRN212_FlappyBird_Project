@@ -370,7 +370,7 @@ namespace PRN212.G5.FlappyBird.Views
                 // Update X position từ StageService (không lấy từ UI)
                 // pair.X đã được update bởi stageService.UpdatePipePositions(speed)
 
-                // Bỏ qua pipes trong group (chỉ xử lý leader, các pipes khác sẽ follow leader)
+                // Xử lý pipes trong group (non-leader sẽ follow leader)
                 if (pair.GroupId != -1 && !pair.IsGroupLeader)
                 {
                     // Pipes trong group di chuyển cùng leader, giữ khoảng cách GroupPipeSpacing
@@ -383,7 +383,32 @@ namespace PRN212.G5.FlappyBird.Views
                         Canvas.SetLeft(bottom, leaderX + offset);
                         pair.X = leaderX + offset;
                     }
-                    continue;
+                    else
+                    {
+                        // Leader không tồn tại (đã bị xóa), xóa pipe này luôn
+                        if (GameCanvas.Children.Contains(top))
+                            GameCanvas.Children.Remove(top);
+                        if (GameCanvas.Children.Contains(bottom))
+                            GameCanvas.Children.Remove(bottom);
+                        stageService.PipePairs.Remove(pair);
+                        pipePairs.RemoveAt(i);
+                        i--; // Giảm index vì đã xóa phần tử
+                        continue;
+                    }
+                    
+                    // Kiểm tra nếu non-leader pipe ra khỏi màn hình (theo leader)
+                    // KHÔNG xóa ngay, để leader xử lý recycle cho cả group
+                    // Non-leader pipes sẽ được recycle cùng với leader khi leader ra khỏi màn hình
+                    
+                    // Kiểm tra collision với group pipes (non-leader)
+                    if (gameService.GraceTicksRemaining <= 0 &&
+                        (FlappyBird.CollidesWith(top) || FlappyBird.CollidesWith(bottom)))
+                    {
+                        EndGame();
+                        return;
+                    }
+                    
+                    continue; // Bỏ qua phần xử lý khác, nhưng đã check collision rồi
                 }
 
                 ApplyPipeAnimation(pairUI);
@@ -395,23 +420,80 @@ namespace PRN212.G5.FlappyBird.Views
 
                 if (pair.X < -stageService.GetPipeWidth())
                 {
-                    // Nếu là leader của group, xóa tất cả pipes trong group
+                    // Nếu là leader của group, recycle tất cả pipes trong group cùng lúc
                     if (pair.GroupId != -1 && pair.IsGroupLeader)
                     {
+                        // Lấy tất cả pipes trong group (bao gồm cả leader)
+                        var groupPipes = pipePairs.Where(p => p.State.GroupId == pair.GroupId).OrderBy(p => p.State.GroupIndex).ToList();
+                        
+                        // Xóa tất cả pipes trong group khỏi StageService trước khi tính farthestRight
                         stageService.RemoveGroupPipes(pair.GroupId);
-                        var groupPipes = pipePairs.Where(p => p.State.GroupId == pair.GroupId).ToList();
-                        foreach (var groupPipe in groupPipes)
+                        
+                        // Tính farthestRight từ pipes còn lại (không tính pipes trong group này)
+                        double groupFarthestRight = 0;
+                        var groupRemainingPipes = pipePairs.Where(p => p.State.GroupId != pair.GroupId && p.State.X >= -stageService.GetPipeWidth()).ToList();
+                        if (groupRemainingPipes.Count > 0)
                         {
-                            if (groupPipe != pairUI)
+                            groupFarthestRight = groupRemainingPipes.Max(p => p.State.X);
+                        }
+                        if (groupFarthestRight <= 0)
+                        {
+                            groupFarthestRight = stageService.GetFirstPipeStartLeft();
+                        }
+                        
+                        double groupFarthestNoTouchX = stageService.GetFarthestNoTouchX();
+                        
+                        double newLeaderX;
+                        if (groupFarthestNoTouchX > 0)
+                        {
+                            newLeaderX = Math.Max(groupFarthestNoTouchX + 500, groupFarthestRight + stageService.GetPipeSpacing());
+                    }
+                    else
+                    {
+                            newLeaderX = groupFarthestRight + stageService.GetPipeSpacing();
+                            if (newLeaderX < 1000)
                             {
-                                GameCanvas.Children.Remove(groupPipe.Top);
-                                GameCanvas.Children.Remove(groupPipe.Bottom);
-                                pipePairs.Remove(groupPipe);
+                                newLeaderX = 1000;
                             }
                         }
+                        
+                        // Recycle tất cả pipes trong group với vị trí mới
+                        for (int g = 0; g < groupPipes.Count; g++)
+                        {
+                            var groupPipe = groupPipes[g];
+                            double newGroupPipeX = newLeaderX + (g * stageService.GetGroupPipeSpacing());
+                            
+                            // Cập nhật vị trí cho tất cả pipes trong group
+                            groupPipe.State.X = newGroupPipeX;
+                            Canvas.SetLeft(groupPipe.Top, newGroupPipeX);
+                            Canvas.SetLeft(groupPipe.Bottom, newGroupPipeX);
+                            
+                            // Thêm lại vào StageService
+                            stageService.PipePairs.Add(groupPipe.State);
+                        }
+                        
+                        // Set lại pair.X cho leader (để code tiếp theo không xử lý lại)
+                        pair.X = newLeaderX;
+                        
+                        // Bỏ qua phần recycle phía dưới vì đã xử lý cả group rồi
+                        gameService.IncrementScore();
+                        stageService.OnPipePassed();
+                        ScoreText.Text = $"Score: {gameService.Score}";
+                        SoundHelper.PlaySfx(sfxPoint, "Point.mp3", 0.6);
+                        
+                        // Kiểm tra xem có cần spawn NoTouch không
+                        if (stageService.ShouldSpawnNoTouch(stageService.GetTotalPipesPassed(), out int groupNoTouchCount, out int groupSpawnAt))
+                        {
+                            if (groupSpawnAt > 0)
+                            {
+                                SpawnNoTouchGroup(groupNoTouchCount, newLeaderX + stageService.GetPipeSpacing());
+                            }
+                        }
+                        
+                        continue; // Bỏ qua phần recycle phía dưới
                     }
                     
-                    // Xóa pipe này khỏi StageService trước khi tính farthestRight
+                    // Xóa pipe này khỏi StageService trước khi tính farthestRight (cho pipe đơn)
                     stageService.PipePairs.Remove(pair);
                     
                     // Tính farthestRight từ UI pipes còn lại (loại trừ pipe hiện tại)
