@@ -1533,13 +1533,13 @@ namespace PRN212.G5.FlappyBird.Views
                     }
                 }
 
-                // TEST MODE: Comment collision detection để chim xuyên qua ống
-                // if (graceTicksRemaining <= 0 &&
-                //     (FlappyBird.CollidesWith(top) || FlappyBird.CollidesWith(bottom)))
-                // {
-                //     EndGame();
-                //     return;
-                // }
+                // Kiểm tra collision với pipes
+                if (graceTicksRemaining <= 0 &&
+                    (FlappyBird.CollidesWith(top) || FlappyBird.CollidesWith(bottom)))
+                {
+                    EndGame();
+                    return;
+                }
             }
 
             // Xử lý NoTouch obstacles
