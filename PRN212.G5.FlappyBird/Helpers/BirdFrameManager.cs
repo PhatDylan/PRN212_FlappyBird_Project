@@ -27,29 +27,32 @@ namespace PRN212.G5.FlappyBird.Helpers
         public BitmapImage[] CurrentDeathFrames => currentDeathFrames;
 
         /// <summary>
-        /// Load tất cả các frame của bird
+        /// Load tất cả các frame của bird dựa trên skin đã chọn
         /// </summary>
         public void LoadAllBirdFrames()
         {
-            // Day theme - Fly animation (using single reliable frame)
-            var birdFly1 = AssetHelper.LoadBitmapSafe("birdfly-1.png");
-            var birdFall1 = AssetHelper.LoadBitmapSafe("birdfall-1.png");
+            // Get selected skin from SkinManager
+            var selectedSkin = SkinManager.GetSelectedSkin();
+
+            // Day theme - Load frames from selected skin
+            var birdFlyDay = AssetHelper.LoadBitmapSafe(selectedSkin.DayFlyFrame);
+            var birdFallDay = AssetHelper.LoadBitmapSafe(selectedSkin.DayFallFrame);
 
             // Only use frames that actually exist
-            if (birdFly1 != null)
+            if (birdFlyDay != null)
             {
-                dayBirdFlyFrames = new[] { birdFly1 };
+                dayBirdFlyFrames = new[] { birdFlyDay };
             }
             else
             {
-                // Fallback to a default if birdfly-1.png is missing
+                // Fallback to a default if the day fly frame is missing
                 dayBirdFlyFrames = new BitmapImage[0];
             }
 
-            if (birdFall1 != null)
+            if (birdFallDay != null)
             {
-                dayBirdFallFrames = new[] { birdFall1 };
-                dayBirdDeathFrames = new[] { birdFall1 };
+                dayBirdFallFrames = new[] { birdFallDay };
+                dayBirdDeathFrames = new[] { birdFallDay };
             }
             else
             {
@@ -57,23 +60,24 @@ namespace PRN212.G5.FlappyBird.Helpers
                 dayBirdDeathFrames = new BitmapImage[0];
             }
 
-            // Night theme - Try to load night frames, fallback to day if missing
-            var birdFly3 = AssetHelper.LoadBitmapSafe("birdfly-3.png");
-            var birdFall3 = AssetHelper.LoadBitmapSafe("birdfall-3.png");
+            // Night theme - Load frames from selected skin
+            var birdFlyNight = AssetHelper.LoadBitmapSafe(selectedSkin.NightFlyFrame);
+            var birdFallNight = AssetHelper.LoadBitmapSafe(selectedSkin.NightFallFrame);
 
-            if (birdFly3 != null)
+            if (birdFlyNight != null)
             {
-                nightBirdFlyFrames = new[] { birdFly3 };
+                nightBirdFlyFrames = new[] { birdFlyNight };
             }
             else
             {
+                // Fallback to day frames if night frames are missing
                 nightBirdFlyFrames = dayBirdFlyFrames;
             }
 
-            if (birdFall3 != null)
+            if (birdFallNight != null)
             {
-                nightBirdFallFrames = new[] { birdFall3 };
-                nightBirdDeathFrames = new[] { birdFall3 };
+                nightBirdFallFrames = new[] { birdFallNight };
+                nightBirdDeathFrames = new[] { birdFallNight };
             }
             else
             {
