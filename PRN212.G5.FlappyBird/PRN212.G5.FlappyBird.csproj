@@ -27,6 +27,7 @@
     <None Remove="Assets\PlayButton.png" />
     <None Remove="Assets\SettingButton.png" />
     <None Remove="Assets\SkinButton.png" />
+    <None Remove="Assets\NoTouch.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -93,6 +94,9 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\SkinButton.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\NoTouch.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
   </ItemGroup>

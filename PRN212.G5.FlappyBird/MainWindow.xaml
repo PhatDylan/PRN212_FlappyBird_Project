@@ -29,7 +29,12 @@
                    Source="/Assets/birdfly-1.png"
                    Canvas.Left="700" Canvas.Top="140"
                    Panel.ZIndex="10"
-                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                   RenderTransformOrigin="0.5,0.5"
+                   RenderOptions.BitmapScalingMode="HighQuality">
+                <Image.RenderTransform>
+                    <RotateTransform Angle="0"/>
+                </Image.RenderTransform>
+            </Image>
 
             <TextBlock x:Name="ScoreText"
                        Text="Score: 0"
