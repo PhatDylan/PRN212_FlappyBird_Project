@@ -10,20 +10,20 @@
         <!-- ========== DAY LAYER ========== -->
         <Grid x:Name="DayLayer" Panel.ZIndex="0" Opacity="1">
             <Image Source="/Assets/DayStage.jpg"
-                   Stretch="UniformToFill"/>
+                   Stretch="UniformToFill" Margin="0,-57,0,57"/>
         </Grid>
 
         <!-- ========== NIGHT LAYER ========== -->
         <Grid x:Name="NightLayer" Panel.ZIndex="1" Opacity="0">
             <Image Source="/Assets/NightStage.jpg"
-                   Stretch="UniformToFill"/>
+                   Stretch="UniformToFill" Margin="0,-88,0,88"/>
         </Grid>
 
         <!-- ========== GAME CANVAS (trong suốt, chứa pipes/clouds/bird) ========== -->
         <Canvas x:Name="GameCanvas"
                 Background="Transparent"
-                Panel.ZIndex="2">
-            
+                Panel.ZIndex="2" Margin="0,-10,0,10">
+
             <!-- Day Ground -->
             <Image x:Name="DayGround"
                    Source="/Assets/DayGround.jpg"
@@ -35,13 +35,13 @@
                    Panel.ZIndex="1"
                    Opacity="1"
                    Visibility="Visible"/>
-            
+
             <!-- Night Ground -->
             <Image x:Name="NightGround"
                    Source="/Assets/NightGround.jpg"
                    Stretch="UniformToFill"
-                   Canvas.Left="0"
-                   Canvas.Top="500"
+                   Canvas.Left="331"
+                   Canvas.Top="802"
                    Width="1000"
                    Height="110"
                    Panel.ZIndex="1"
@@ -178,7 +178,8 @@
                                     Background="#3B8DAE" BorderBrush="#1E5163"
                                     Click="BtnReplay_Click"
                                     ToolTip="Replay">
-                                <TextBlock Text="&#xE72C;" /> <!-- MDL2: Refresh/Replay -->
+                                <TextBlock Text="&#xE72C;" />
+                                <!-- MDL2: Refresh/Replay -->
                             </Button>
                             <TextBlock Text="Replay" Foreground="#0F2D3A" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                         </StackPanel>
@@ -190,7 +191,8 @@
                                     Background="#D68F00" BorderBrush="#845D00"
                                     Click="BtnLeft_Click"
                                     ToolTip="Main Menu">
-                                <TextBlock Text="&#xE80F;" /> <!-- MDL2: Home -->
+                                <TextBlock Text="&#xE80F;" />
+                                <!-- MDL2: Home -->
                             </Button>
                             <TextBlock Text="Main menu" Foreground="#0F2D3A" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,6,0,0"/>
                         </StackPanel>
