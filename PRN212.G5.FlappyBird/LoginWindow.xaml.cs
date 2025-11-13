@@ -94,18 +94,34 @@ namespace PRN212.G5.FlappyBird
         {
             InitializeMediaPlayer();
 
-            PreloadBgm();
+            PreloadVideo();
 
             InitializeComponent();
 
+            PreloadVideo();
+
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
         }
-
-        private void PreloadBgm()
+        private void PreloadVideo()
         {
-            mediaPlayer.Volume = 0;
-            mediaPlayer.Play();
-            mediaPlayer.Pause();
+            if (mediaBGElement != null)
+            {
+                try
+                {
+                    string videoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LoginWindowBG.mp4");
+                    mediaBGElement.Source = new Uri(videoPath, UriKind.Absolute);
+                    mediaBGElement.Volume = 0;
+
+                    // Load video nhưng chưa play
+                    mediaBGElement.LoadedBehavior = MediaState.Manual;
+                    mediaBGElement.Play();
+                    mediaBGElement.Pause(); // Pause ngay để giữ frame đầu
+                }
+                catch (Exception ex)
+                {
+                    // Log error nếu cần
+                }
+            }
         }
 
         private void InitializeMediaPlayer()
@@ -117,23 +133,17 @@ namespace PRN212.G5.FlappyBird
         }
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // Load video
-            try
+            // Play immediately - no delay
+            if (mediaBGElement != null)
             {
-                string videoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LoginWindowBG.mp4");
-                mediaBGElement.Source = new Uri(videoPath, UriKind.Absolute);
-                mediaBGElement.Volume = 0; // Mute video nếu chỉ dùng làm background
+                mediaBGElement.Position = TimeSpan.Zero;
                 mediaBGElement.Play();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading video: {ex.Message}");
-            }
 
-            // Play music
             if (mediaPlayer != null)
             {
                 mediaPlayer.Volume = musicVolume / 100.0;
+                mediaPlayer.Position = TimeSpan.Zero;
                 mediaPlayer.Play();
             }
         }

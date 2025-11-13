@@ -15,7 +15,8 @@
               UnloadedBehavior="Stop"
               Stretch="UniformToFill"
               MediaEnded="MediaBGElement_MediaEnded"
-              Panel.ZIndex="-1"/>
+              Panel.ZIndex="-1"
+              ScrubbingEnabled="True"/>
         <Image x:Name="FlappyBird"
                    Source="/Assets/birdfly-1.png"
                    Canvas.Left="700" Canvas.Top="140"
