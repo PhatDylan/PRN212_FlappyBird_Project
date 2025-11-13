@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace FlappyBird.Data.Repositories
 {
@@ -12,13 +9,32 @@ namespace FlappyBird.Data.Repositories
 
         public int LoadHighScore()
         {
-            if (!File.Exists(filePath)) return 0;
-            return int.TryParse(File.ReadAllText(filePath), out int score) ? score : 0;
+            try
+            {
+                if (File.Exists(filePath) &&
+                    int.TryParse(File.ReadAllText(filePath), out int score) &&
+                    score >= 0)
+                {
+                    return score;
+                }
+            }
+            catch
+            {
+                // ignore and fallback to zero
+            }
+            return 0;
         }
 
         public void SaveHighScore(int score)
         {
-            File.WriteAllText(filePath, score.ToString());
+            try
+            {
+                File.WriteAllText(filePath, Math.Max(0, score).ToString());
+            }
+            catch
+            {
+                // ignore persistence errors
+            }
         }
     }
 }
