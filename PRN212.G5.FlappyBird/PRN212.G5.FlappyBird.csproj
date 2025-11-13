@@ -20,8 +20,10 @@
     <None Remove="Assets\Cloud-Night.png" />
     <None Remove="Assets\DayStage.jpg" />
     <None Remove="Assets\FlappyBirdTitle.png" />
+    <None Remove="Assets\Generated File November 13, 2025 - 9_09AM.mp4" />
     <None Remove="Assets\Kubbi - Up In My Jam ♫ NO COPYRIGHT 8-bit Music.mp3" />
     <None Remove="Assets\LoginPage.jpg" />
+    <None Remove="Assets\LoginWindowBG.mp4" />
     <None Remove="Assets\NightStage.jpg" />
     <None Remove="Assets\Pipe-day.png" />
     <None Remove="Assets\Pipe-night.png" />
@@ -46,9 +48,13 @@
     <Content Include="Assets\Jump.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Assets\LoginWindowBG.mp4">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Assets\Point.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.4" />
     <Resource Include="Assets\birdfall-1.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
