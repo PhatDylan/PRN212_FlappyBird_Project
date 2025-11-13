@@ -54,7 +54,6 @@
     <Content Include="Assets\Point.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.4" />
     <Resource Include="Assets\birdfall-1.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

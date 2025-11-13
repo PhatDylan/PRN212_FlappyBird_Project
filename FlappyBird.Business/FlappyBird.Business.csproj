@@ -6,8 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.4" />
-  </ItemGroup>
-
 </Project>

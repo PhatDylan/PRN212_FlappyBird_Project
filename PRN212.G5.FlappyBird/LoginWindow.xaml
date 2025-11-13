@@ -8,17 +8,14 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded">
 
-    <Grid Background="#4EC0CA">
-        <!-- Video Background - Tự động phát và loop -->
-        <MediaElement x:Name="BackgroundVideo"
-               Source="/Assets/Generated File November 13, 2025 - 9_09AM.mp4"
-               LoadedBehavior="Play"
-               UnloadedBehavior="Manual"
-               Stretch="UniformToFill"
-               IsMuted="True"
-               Panel.ZIndex="0"
-               MediaEnded="BackgroundVideo_MediaEnded"/>
-
+    <Grid>
+        <MediaElement x:Name="mediaBGElement"
+              Source="Assets/LoginWindowBG.mp4"
+              LoadedBehavior="Manual"
+              UnloadedBehavior="Stop"
+              Stretch="UniformToFill"
+              MediaEnded="MediaBGElement_MediaEnded"
+              Panel.ZIndex="-1"/>
         <Image x:Name="FlappyBird"
                    Source="/Assets/birdfly-1.png"
                    Canvas.Left="700" Canvas.Top="140"

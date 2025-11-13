@@ -115,9 +115,22 @@ namespace PRN212.G5.FlappyBird
             string assetPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BGM.mp3");
             mediaPlayer.Open(new Uri(assetPath));
         }
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            // Load video
+            try
+            {
+                string videoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LoginWindowBG.mp4");
+                mediaBGElement.Source = new Uri(videoPath, UriKind.Absolute);
+                mediaBGElement.Volume = 0; // Mute video nếu chỉ dùng làm background
+                mediaBGElement.Play();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading video: {ex.Message}");
+            }
+
+            // Play music
             if (mediaPlayer != null)
             {
                 mediaPlayer.Volume = musicVolume / 100.0;
@@ -135,15 +148,11 @@ namespace PRN212.G5.FlappyBird
             }
         }
 
-        // Event handler cho video background - loop video
-        private void BackgroundVideo_MediaEnded(object sender, RoutedEventArgs e)
+        private void MediaBGElement_MediaEnded(object sender, RoutedEventArgs e)
         {
-            var media = sender as MediaElement;
-            if (media != null)
-            {
-                media.Position = TimeSpan.Zero;
-                media.Play();
-            }
+            // Loop video
+            mediaBGElement.Position = TimeSpan.Zero;
+            mediaBGElement.Play();
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
@@ -190,16 +199,23 @@ namespace PRN212.G5.FlappyBird
             };
             skinWindow.ShowDialog();
         }
-
         protected override void OnClosed(EventArgs e)
         {
-            // Cleanup khi đóng window
+            // Stop video
+            if (mediaBGElement != null)
+            {
+                mediaBGElement.Stop();
+                mediaBGElement.Close();
+            }
+
+            // Cleanup audio
             if (mediaPlayer != null)
             {
                 mediaPlayer.Stop();
                 mediaPlayer.Close();
                 mediaPlayer = null;
             }
+
             base.OnClosed(e);
         }
     }
