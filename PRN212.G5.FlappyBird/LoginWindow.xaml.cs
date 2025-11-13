@@ -1,8 +1,9 @@
-﻿using System;
+﻿using PRN212.G5.FlappyBird.Views;
+using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
-using PRN212.G5.FlappyBird.Views;
 using Path = System.IO.Path;
 
 namespace PRN212.G5.FlappyBird
@@ -25,7 +26,7 @@ namespace PRN212.G5.FlappyBird
     public static class SkinManager
     {
         private static int selectedSkinId = 1;
-        
+
         public static List<BirdSkin> AvailableSkins { get; } = new()
         {
             new BirdSkin
@@ -87,7 +88,7 @@ namespace PRN212.G5.FlappyBird
         private double selectedPipeSpeed = DefaultPipeSpeed;
         private double musicVolume = 50;
 
-        private MediaPlayer mediaPlayer; 
+        private MediaPlayer mediaPlayer;
 
         public LoginWindow(double initialPipeSpeed = DefaultPipeSpeed)
         {
@@ -102,7 +103,7 @@ namespace PRN212.G5.FlappyBird
 
         private void PreloadBgm()
         {
-            mediaPlayer.Volume = 0; 
+            mediaPlayer.Volume = 0;
             mediaPlayer.Play();
             mediaPlayer.Pause();
         }
@@ -110,7 +111,7 @@ namespace PRN212.G5.FlappyBird
         private void InitializeMediaPlayer()
         {
             mediaPlayer = new MediaPlayer();
-            mediaPlayer.MediaEnded += MediaPlayer_MediaEnded; 
+            mediaPlayer.MediaEnded += MediaPlayer_MediaEnded;
             string assetPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BGM.mp3");
             mediaPlayer.Open(new Uri(assetPath));
         }
@@ -126,10 +127,22 @@ namespace PRN212.G5.FlappyBird
 
         private void MediaPlayer_MediaEnded(object sender, EventArgs e)
         {
+            // Loop nhạc BGM
             if (mediaPlayer != null)
             {
                 mediaPlayer.Position = TimeSpan.Zero;
                 mediaPlayer.Play();
+            }
+        }
+
+        // Event handler cho video background - loop video
+        private void BackgroundVideo_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            var media = sender as MediaElement;
+            if (media != null)
+            {
+                media.Position = TimeSpan.Zero;
+                media.Play();
             }
         }
 
