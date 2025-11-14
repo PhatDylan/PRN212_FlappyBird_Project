@@ -8,7 +8,7 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded">
 
-    <Grid>
+    <Grid Background="RosyBrown">
         <MediaElement x:Name="mediaBGElement"
               Source="Assets/LoginWindowBG.mp4"
               LoadedBehavior="Manual"
@@ -17,20 +17,11 @@
               MediaEnded="MediaBGElement_MediaEnded"
               Panel.ZIndex="-1"
               ScrubbingEnabled="True"/>
-        <Image x:Name="FlappyBird"
-                   Source="/Assets/birdfly-1.png"
-                   Canvas.Left="700" Canvas.Top="140"
-                   Panel.ZIndex="10"
-                   RenderTransformOrigin="0.691,0.562"
-                   RenderOptions.BitmapScalingMode="HighQuality" Margin="496,160,210,272">
-            <Image.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform/>
-                    <SkewTransform/>
-                    <RotateTransform Angle="0.767"/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Image.RenderTransform>
+        <Image Source="/Assets/birdfly-1.png"
+               Canvas.Left="700" Canvas.Top="140"
+               Panel.ZIndex="10"
+               RenderTransformOrigin="0.691,0.562"
+               RenderOptions.BitmapScalingMode="HighQuality" Margin="496,160,210,272">
         </Image>
 
         <StackPanel x:Name="StartPanelUI"
