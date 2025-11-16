@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -45,6 +46,7 @@
     <Content Include="Assets\Fail.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Assets\icon.ico" />
     <Content Include="Assets\Jump.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -54,7 +56,6 @@
     <Content Include="Assets\Point.mp3">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.4" />
     <Resource Include="Assets\birdfall-1.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>

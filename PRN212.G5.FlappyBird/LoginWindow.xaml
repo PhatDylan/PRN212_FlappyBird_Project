@@ -8,31 +8,20 @@
         ResizeMode="NoResize"
         Loaded="Window_Loaded">
 
-    <Grid Background="#4EC0CA">
-        <!-- Video Background - Tự động phát và loop -->
-        <MediaElement x:Name="BackgroundVideo"
-               Source="/Assets/Generated File November 13, 2025 - 9_09AM.mp4"
-               LoadedBehavior="Play"
-               UnloadedBehavior="Manual"
-               Stretch="UniformToFill"
-               IsMuted="True"
-               Panel.ZIndex="0"
-               MediaEnded="BackgroundVideo_MediaEnded"/>
-
-        <Image x:Name="FlappyBird"
-                   Source="/Assets/birdfly-1.png"
-                   Canvas.Left="700" Canvas.Top="140"
-                   Panel.ZIndex="10"
-                   RenderTransformOrigin="0.691,0.562"
-                   RenderOptions.BitmapScalingMode="HighQuality" Margin="496,160,210,272">
-            <Image.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform/>
-                    <SkewTransform/>
-                    <RotateTransform Angle="0.767"/>
-                    <TranslateTransform/>
-                </TransformGroup>
-            </Image.RenderTransform>
+    <Grid Background="RosyBrown">
+        <MediaElement x:Name="mediaBGElement"
+              Source="Assets/LoginWindowBG.mp4"
+              LoadedBehavior="Manual"
+              UnloadedBehavior="Stop"
+              Stretch="UniformToFill"
+              MediaEnded="MediaBGElement_MediaEnded"
+              Panel.ZIndex="-1"
+              ScrubbingEnabled="True"/>
+        <Image Source="/Assets/birdfly-1.png"
+               Canvas.Left="700" Canvas.Top="140"
+               Panel.ZIndex="10"
+               RenderTransformOrigin="0.691,0.562"
+               RenderOptions.BitmapScalingMode="HighQuality" Margin="496,160,210,272">
         </Image>
 
         <StackPanel x:Name="StartPanelUI"

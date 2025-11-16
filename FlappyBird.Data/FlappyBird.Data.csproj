@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LibVLCSharp.WPF" Version="3.9.4" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\FlappyBird.Business\FlappyBird.Business.csproj" />
   </ItemGroup>
 

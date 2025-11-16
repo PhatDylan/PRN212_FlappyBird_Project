@@ -94,18 +94,34 @@ namespace PRN212.G5.FlappyBird
         {
             InitializeMediaPlayer();
 
-            PreloadBgm();
+            PreloadVideo();
 
             InitializeComponent();
 
+            PreloadVideo();
+
             selectedPipeSpeed = Math.Clamp(initialPipeSpeed, MinPipeSpeed, MaxPipeSpeed);
         }
-
-        private void PreloadBgm()
+        private void PreloadVideo()
         {
-            mediaPlayer.Volume = 0;
-            mediaPlayer.Play();
-            mediaPlayer.Pause();
+            if (mediaBGElement != null)
+            {
+                try
+                {
+                    string videoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "LoginWindowBG.mp4");
+                    mediaBGElement.Source = new Uri(videoPath, UriKind.Absolute);
+                    mediaBGElement.Volume = 0;
+
+                    // Load video nhưng chưa play
+                    mediaBGElement.LoadedBehavior = MediaState.Manual;
+                    mediaBGElement.Play();
+                    mediaBGElement.Pause(); // Pause ngay để giữ frame đầu
+                }
+                catch (Exception ex)
+                {
+                    // Log error nếu cần
+                }
+            }
         }
 
         private void InitializeMediaPlayer()
@@ -115,12 +131,19 @@ namespace PRN212.G5.FlappyBird
             string assetPath = Path.Combine(AppContext.BaseDirectory, "Assets", "BGM.mp3");
             mediaPlayer.Open(new Uri(assetPath));
         }
-
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            // Play immediately - no delay
+            if (mediaBGElement != null)
+            {
+                mediaBGElement.Position = TimeSpan.Zero;
+                mediaBGElement.Play();
+            }
+
             if (mediaPlayer != null)
             {
                 mediaPlayer.Volume = musicVolume / 100.0;
+                mediaPlayer.Position = TimeSpan.Zero;
                 mediaPlayer.Play();
             }
         }
@@ -135,15 +158,11 @@ namespace PRN212.G5.FlappyBird
             }
         }
 
-        // Event handler cho video background - loop video
-        private void BackgroundVideo_MediaEnded(object sender, RoutedEventArgs e)
+        private void MediaBGElement_MediaEnded(object sender, RoutedEventArgs e)
         {
-            var media = sender as MediaElement;
-            if (media != null)
-            {
-                media.Position = TimeSpan.Zero;
-                media.Play();
-            }
+            // Loop video
+            mediaBGElement.Position = TimeSpan.Zero;
+            mediaBGElement.Play();
         }
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
@@ -190,16 +209,23 @@ namespace PRN212.G5.FlappyBird
             };
             skinWindow.ShowDialog();
         }
-
         protected override void OnClosed(EventArgs e)
         {
-            // Cleanup khi đóng window
+            // Stop video
+            if (mediaBGElement != null)
+            {
+                mediaBGElement.Stop();
+                mediaBGElement.Close();
+            }
+
+            // Cleanup audio
             if (mediaPlayer != null)
             {
                 mediaPlayer.Stop();
                 mediaPlayer.Close();
                 mediaPlayer = null;
             }
+
             base.OnClosed(e);
         }
     }
